@@ -1,0 +1,15 @@
+node_modules
+dist
+.next
+.expo
+.turbo
+coverage
+pnpm-lock.yaml
+docs/screens
+*.png
+next-env.d.ts
+
+# Hand-written project docs — leave formatting to their authors
+docs
+CLAUDE.md
+PROMPTS.md

@@ -1,0 +1,22 @@
+# dependencies
+node_modules/
+
+# builds and caches
+dist/
+.next/
+.expo/
+.turbo/
+coverage/
+*.tsbuildinfo
+next-env.d.ts
+android/
+ios/
+
+# env — never commit secrets (see .env.example)
+.env
+.env.*
+!.env.example
+
+# misc
+.DS_Store
+*.log

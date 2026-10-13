@@ -1,0 +1,25 @@
+@import 'tailwindcss';
+
+/* Colour tokens from docs/DESIGN.md */
+@theme {
+  --color-ink: #17181c;
+  --color-muted: #55585f;
+  --color-ground: #f4f2ec;
+  --color-surface: #ffffff;
+  --color-line: #dedad0;
+  --color-red: #a3231b;
+  --color-red-soft: #f6dedb;
+  --color-yellow: #f2c230;
+  --color-yellow-soft: #fbefc4;
+  --color-green: #1e6b45;
+  --color-green-soft: #dcefe3;
+  --color-blue: #1f4e9c;
+
+  --font-sans: var(--font-public-sans), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
+
+body {
+  background: var(--color-ground);
+  color: var(--color-ink);
+}
