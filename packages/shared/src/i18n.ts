@@ -58,8 +58,8 @@ const pt = {
   'sync.done': 'Sincronizado às {time}',
   'sync.never': 'Ainda não sincronizado',
   'sync.offline': 'Sem ligação. Os registos ficam guardados no telemóvel.',
-  'sync.queued': '{count} registos por enviar',
-  'sync.rejected': '{count} registos recusados pelo servidor. Contacte o supervisor.',
+  'sync.queued': 'Registos por enviar: {count}',
+  'sync.rejected': 'Registos recusados pelo servidor: {count}. Contacte o supervisor.',
   'sync.authRequired': 'Entre de novo com rede para enviar os registos.',
   'blocked.title': 'Telemóvel bloqueado',
   'blocked.text':

@@ -82,14 +82,18 @@ export default function Home() {
               onPress={() => router.push(`/exit/${ticket.id}`)}
               style={[styles.item, i > 0 && styles.itemBorder]}
             >
-              <VehicleBadge code={codeOf(ticket.vehicleClassId)} />
+              <VehicleBadge code={codeOf(ticket.vehicleClassId)} size={44} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.plate}>{ticket.plate}</Text>
                 <Text style={styles.serial} numberOfLines={1}>
-                  {ticket.serial} · {formatDiliTime(new Date(ticket.entryAt))}
+                  {ticket.serial}
                 </Text>
               </View>
-              <StatusPill status={ticket.status} />
+              {/* Entry time sits under the pill: the 7-digit serial needs the row's width. */}
+              <View style={styles.itemRight}>
+                <StatusPill status={ticket.status} />
+                <Text style={styles.time}>{formatDiliTime(new Date(ticket.entryAt))}</Text>
+              </View>
             </Pressable>
           ))}
         </Card>
@@ -128,4 +132,6 @@ const styles = StyleSheet.create({
   itemBorder: { borderTopWidth: 1, borderTopColor: colors.line },
   plate: { fontFamily: fonts.extrabold, fontSize: 19, color: colors.ink },
   serial: { fontFamily: fonts.mono, fontSize: 14, color: colors.blue, marginTop: 2 },
+  itemRight: { alignItems: 'flex-end', gap: 6 },
+  time: { fontFamily: fonts.mono, fontSize: 14, color: colors.blue },
 });

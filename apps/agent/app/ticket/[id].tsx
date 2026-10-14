@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  serial: { flex: 1, fontFamily: fonts.mono, fontSize: 19, color: colors.blue },
+  serial: { flex: 1, fontFamily: fonts.mono, fontSize: 16, color: colors.blue },
   plateRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

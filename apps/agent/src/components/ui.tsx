@@ -43,7 +43,9 @@ export function Header({
     <View style={[styles.header, styles.headerRow, { paddingTop: insets.top + 16 }]}>
       <BrandMark size={44} />
       <View style={{ flex: 1 }}>
-        <Text style={styles.eyebrow}>{eyebrow}</Text>
+        <Text style={styles.eyebrow} numberOfLines={1} adjustsFontSizeToFit>
+          {eyebrow}
+        </Text>
         <Text style={styles.title}>{title}</Text>
       </View>
       {right}
@@ -116,7 +118,7 @@ const styles = StyleSheet.create({
   eyebrow: {
     fontFamily: fonts.bold,
     fontSize: 12,
-    letterSpacing: 2,
+    letterSpacing: 1.5,
     color: colors.yellow,
     textTransform: 'uppercase',
   },
