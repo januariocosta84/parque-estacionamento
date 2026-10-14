@@ -46,6 +46,23 @@ const pt = {
     'Sem rede? Pode entrar com o último acesso guardado neste telemóvel. Os títulos sincronizam quando houver ligação.',
   'agentLogin.wrongPin': 'PIN incorreto. Tentativas restantes: {remaining}',
   'agentLogin.locked': 'Conta bloqueada. Contacte o supervisor.',
+  'agentLogin.invalidPin': 'O PIN tem 6 dígitos.',
+  'agentLogin.noOfflineProfile':
+    'Sem rede. Este agente ainda não entrou neste telemóvel com ligação. Tente com rede.',
+  'agentLogin.signingIn': 'A entrar…',
+
+  // ── Agent: sync status and blocked phone ──
+  'sync.now': 'Sincronizar agora',
+  'sync.done': 'Sincronizado às {time}',
+  'sync.never': 'Ainda não sincronizado',
+  'sync.offline': 'Sem ligação. Os registos ficam guardados no telemóvel.',
+  'sync.queued': '{count} registos por enviar',
+  'sync.rejected': '{count} registos recusados pelo servidor. Contacte o supervisor.',
+  'sync.authRequired': 'Entre de novo com rede para enviar os registos.',
+  'blocked.title': 'Telemóvel bloqueado',
+  'blocked.text':
+    'O supervisor bloqueou este telemóvel. Os registos ficam guardados. Contacte o supervisor.',
+  'home.signOut': 'Sair',
 
   // ── Agent: home (01) ──
   'home.parked': 'Estacionados',
@@ -225,6 +242,23 @@ const tet: Record<MessageKey, string> = {
     "Laiha rede? Bele tama ho asesu ikus ne'ebé rai iha telemovel ida-ne'e. Títulu sira sei sinkroniza bainhira iha ligasaun.",
   'agentLogin.wrongPin': "PIN la loos. Tentativa ne'ebé sei iha: {remaining}",
   'agentLogin.locked': 'Konta blokeadu. Kontaktu supervizór.',
+  'agentLogin.invalidPin': 'PIN iha díjitu 6.',
+  'agentLogin.noOfflineProfile':
+    "Laiha rede. Ajente ne'e seidauk tama iha telemovel ida-ne'e ho ligasaun. Koko fali ho rede.",
+  'agentLogin.signingIn': 'Tama hela…',
+
+  // ── Agent: sync status and blocked phone ──
+  'sync.now': 'Sinkroniza agora',
+  'sync.done': 'Sinkroniza ona iha oras {time}',
+  'sync.never': 'Seidauk sinkroniza',
+  'sync.offline': 'Laiha ligasaun. Rejistu sira rai iha telemovel.',
+  'sync.queued': 'Rejistu {count} atu haruka',
+  'sync.rejected': 'Servidór la simu rejistu {count}. Kontaktu supervizór.',
+  'sync.authRequired': 'Tama fali ho rede atu haruka rejistu sira.',
+  'blocked.title': 'Telemovel blokeadu',
+  'blocked.text':
+    "Supervizór blokeia telemovel ida-ne'e. Rejistu sira rai nafatin. Kontaktu supervizór.",
+  'home.signOut': 'Sai',
 
   // ── Agent: home (01) ──
   'home.parked': 'Estasionadu',
