@@ -29,6 +29,7 @@ const pt = {
   'unit.hours.other': '{n} horas',
   'unit.perHour': '{amount} / hora',
   currencyNote: 'Valores em dólares americanos (USD).',
+  'sms.loginCode': 'Estacionamento Dili: o seu código de acesso é {code}. Válido {minutes} min.',
 
   // ── Agent: tabs ──
   'tab.home': 'Início',
@@ -207,6 +208,7 @@ const tet: Record<MessageKey, string> = {
   'unit.hours.other': '{n} oras',
   'unit.perHour': '{amount} / oras',
   currencyNote: 'Valór iha dólar amerikanu (USD).',
+  'sms.loginCode': 'Estacionamento Dili: ita-nia kódigu asesu mak {code}. Válidu minutu {minutes}.',
 
   // ── Agent: tabs ──
   'tab.home': 'Iníciu',

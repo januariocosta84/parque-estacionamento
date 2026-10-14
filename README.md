@@ -29,8 +29,12 @@ pnpm install
 cp .env.example .env
 cp .env.example apps/api/.env
 
-# PostgreSQL
+# PostgreSQL (also creates the estacionamento_test database on first start)
 docker compose up -d
+
+# Database tables, protections and reference data
+pnpm --filter @estacionamento/api db:deploy
+pnpm --filter @estacionamento/api db:seed
 
 # Start API, console and agent app (Expo) together
 pnpm dev
@@ -54,6 +58,20 @@ pnpm build:store   # Play Store (.aab) and App Store builds
 You need a free Expo account (`npx eas-cli login`). iOS also needs a paid Apple Developer Program
 account, and each test iPhone must be registered (`npx eas-cli device:create`) or the build sent
 through TestFlight.
+
+## Database
+
+- Schema: [apps/api/prisma/schema.prisma](apps/api/prisma/schema.prisma). After changing it, run
+  `pnpm --filter @estacionamento/api db:migrate` to create a migration.
+- The `events` and `payments` tables are append-only, tickets can only go Ativo → Pago, and tariff
+  history cannot be rewritten. PostgreSQL triggers enforce this
+  ([migration](apps/api/prisma/migrations/20261014020300_immutability/migration.sql)).
+- Values AMD has not decided yet (part-hour rule, PIN lockout count, session lengths, serial block
+  size) are in the `settings` table, seeded with defaults.
+- Console sign-in sends a one-time code by SMS. Until an SMS provider is chosen, the code is
+  written to the API log instead.
+- API tests that need the database run only when `DATABASE_URL_TEST` is set. Its name must end in
+  `_test`, because the test setup wipes it.
 
 ## Checks
 

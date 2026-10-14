@@ -8,6 +8,23 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: estacionamento
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: estacionamento_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U estacionamento"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Database integration tests always run in CI (they are skipped locally without a DB).
+      DATABASE_URL_TEST: postgresql://estacionamento:ci-only-password@localhost:5432/estacionamento_test
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
