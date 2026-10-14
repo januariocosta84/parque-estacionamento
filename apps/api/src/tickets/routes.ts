@@ -64,7 +64,9 @@ export function registerTicketRoutes(app: FastifyInstance, db: Db) {
     tariffCentsPerHour: number,
     rule: { minimumHours: number; graceMinutes: number },
   ) {
-    const exitAt = new Date(); // system clock, never typed (BR-09)
+    // System clock, never typed (BR-09). A ticket from a phone whose clock was fast can have an
+    // entry in the future; never exit before entry, so it is charged the minimum, not rejected.
+    const exitAt = new Date(Math.max(Date.now(), entryAt.getTime()));
     return { exitAt, ...calculateCharge({ entryAt, exitAt, tariffCentsPerHour }, rule) };
   }
 

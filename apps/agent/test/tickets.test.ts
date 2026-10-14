@@ -152,6 +152,28 @@ describe('exit and payment offline', () => {
     });
   });
 
+  it('a colleague’s ticket with an entry in the future (their clock was fast) charges the minimum', async () => {
+    const env = await readyEnv();
+    const future = new Date(env.now().getTime() + 120 * MINUTE).toISOString();
+    await env.db.run(
+      `INSERT INTO tickets (id, serial, plate, vehicle_class_id, area_id, agent_id, device_id, entry_at,
+         tariff_cents_per_hour, status) VALUES ('t-future', '2600000/MAE/A.M.DILI', 'F-1-TL', ?, ?, 'other', 'dev', ?, 50, 'ATIVO')`,
+      MOTO,
+      session().user.areaIds[0]!,
+      future,
+    );
+    expect(await quoteExit(env, session(), 't-future')).toMatchObject({
+      durationMinutes: 0,
+      hoursCharged: 1,
+      amountCents: 50,
+    });
+    const receipt = await closeTicket(env, session(), 't-future', {
+      expectedAmountCents: 50,
+      receivedCents: 50,
+    });
+    expect(receipt.exitAt).toBe(future);
+  });
+
   it('a paid ticket cannot be reopened, even by SQL (BR-05)', async () => {
     const env = await readyEnv();
     const t = await issueTicket(env, session(), { plate: 'A-1', vehicleClassId: MOTO });

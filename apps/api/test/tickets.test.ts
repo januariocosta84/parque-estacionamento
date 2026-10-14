@@ -359,6 +359,51 @@ describe.skipIf(!hasTestDb)('ticket API (M3)', () => {
       const { token } = await consoleToken('supervisor', 'Setor A');
       expect((await exit(token, ticket.id, 50)).statusCode).toBe(404);
     });
+
+    it('a ticket whose entry is in the future (phone clock fast) charges the minimum, not a crash', async () => {
+      const phone = await agentOnPhone();
+      // A ticket synced from a phone whose clock was 2 hours fast.
+      const ticket = { id: randomUUID() };
+      const push = await app.inject({
+        method: 'POST',
+        url: '/sync/push',
+        headers: bearer(phone.token),
+        payload: {
+          deviceTime: new Date(Date.now() + 2 * 60 * MINUTE).toISOString(),
+          items: [
+            {
+              kind: 'TICKET_ISSUED',
+              ticket: {
+                id: ticket.id,
+                serial: phone.nextSerial(),
+                plate: 'F-1-TL',
+                vehicleClassId: classId,
+                areaId: (await db.area.findUniqueOrThrow({ where: { name: 'Setor A' } })).id,
+                entryAt: new Date(Date.now() + 2 * 60 * MINUTE).toISOString(),
+                tariffCentsPerHour: 50,
+              },
+              issueEventId: randomUUID(),
+            },
+          ],
+        },
+      });
+      expect(push.json().results).toEqual([{ status: 'applied' }]);
+      const quote = await app.inject({
+        method: 'GET',
+        url: `/tickets/${ticket.id}/charge`,
+        headers: bearer(phone.token),
+      });
+      expect(quote.statusCode).toBe(200);
+      expect(chargeQuoteSchema.parse(quote.json())).toMatchObject({
+        durationMinutes: 0,
+        hoursCharged: 1,
+        amountCents: 50,
+      });
+      const res = await exit(phone.token, ticket.id, 50);
+      expect(res.statusCode).toBe(200);
+      const receipt = receiptSchema.parse(res.json());
+      expect(Date.parse(receipt.exitAt)).toBeGreaterThanOrEqual(Date.parse(receipt.entryAt));
+    });
   });
 
   describe('find and list (FR-13, FR-18, FR-21, FR-23) with role scoping', () => {

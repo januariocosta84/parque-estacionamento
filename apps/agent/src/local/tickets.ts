@@ -188,9 +188,12 @@ async function chargingRule(db: SqlDb) {
 
 function makeQuote(
   ticket: LocalTicket,
-  exitAt: Date,
+  now: Date,
   rule: Awaited<ReturnType<typeof chargingRule>>,
 ): ChargeQuote {
+  // A colleague's ticket from a phone whose clock was fast can have an entry in the future;
+  // never exit before entry, so it is charged the minimum (same rule as the API).
+  const exitAt = new Date(Math.max(now.getTime(), Date.parse(ticket.entryAt)));
   const c = calculateCharge(
     { entryAt: new Date(ticket.entryAt), exitAt, tariffCentsPerHour: ticket.tariffCentsPerHour },
     rule,
