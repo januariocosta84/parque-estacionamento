@@ -3,7 +3,9 @@ import Fastify from 'fastify';
 import type { FastifyServerOptions } from 'fastify';
 import { healthResponseSchema } from '@estacionamento/shared';
 import type { ErrorResponse, HealthResponse } from '@estacionamento/shared';
+import { registerAdminRoutes } from './admin/routes';
 import { registerAuthRoutes } from './auth/routes';
+import { registerConsoleRoutes } from './console/routes';
 import type { Db } from './db';
 import { ApiError, sendError } from './http';
 import { LogSmsSender } from './sms';
@@ -49,6 +51,8 @@ export function buildApp(deps: AppDeps, options: FastifyServerOptions = {}) {
   registerAuthRoutes(app, deps.db, sms);
   registerTicketRoutes(app, deps.db);
   registerSyncRoutes(app, deps.db);
+  registerConsoleRoutes(app, deps.db);
+  registerAdminRoutes(app, deps.db);
 
   return app;
 }
