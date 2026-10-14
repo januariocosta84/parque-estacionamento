@@ -29,7 +29,11 @@ export default function RootLayout() {
       <AppProvider>
         <StatusBar style="light" />
         <Stack
-          screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.ground } }}
+          screenOptions={{
+            headerShown: false,
+            animation: 'fade',
+            contentStyle: { backgroundColor: colors.ground },
+          }}
         />
       </AppProvider>
     </SafeAreaProvider>

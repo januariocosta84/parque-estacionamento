@@ -20,11 +20,13 @@ export function Header({
   title,
   subtitle,
   large,
+  right,
 }: {
   eyebrow: string;
   title: string;
   subtitle?: string;
   large?: boolean;
+  right?: ReactNode;
 }) {
   const insets = useSafeAreaInsets();
   if (large) {
@@ -44,6 +46,7 @@ export function Header({
         <Text style={styles.eyebrow}>{eyebrow}</Text>
         <Text style={styles.title}>{title}</Text>
       </View>
+      {right}
     </View>
   );
 }
