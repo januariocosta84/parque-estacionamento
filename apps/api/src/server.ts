@@ -10,8 +10,14 @@ if (!databaseUrl) {
 const host = process.env.API_HOST ?? '0.0.0.0';
 const port = Number(process.env.API_PORT ?? 3001);
 
+// Comma-separated browser origins allowed to call the API, e.g. the console's URL.
+const corsOrigins = (process.env.CORS_ORIGINS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const db = createDb(databaseUrl);
-const app = buildApp({ db }, { logger: true });
+const app = buildApp({ db, corsOrigins }, { logger: true });
 app.addHook('onClose', () => db.$disconnect());
 
 try {

@@ -1,3 +1,4 @@
+import cors from '@fastify/cors';
 import Fastify from 'fastify';
 import type { FastifyServerOptions } from 'fastify';
 import { healthResponseSchema } from '@estacionamento/shared';
@@ -13,11 +14,19 @@ import { registerTicketRoutes } from './tickets/routes';
 export interface AppDeps {
   db: Db;
   sms?: SmsSender;
+  /** Browser origins allowed to call the API (the console). None by default. */
+  corsOrigins?: string[];
 }
 
 export function buildApp(deps: AppDeps, options: FastifyServerOptions = {}) {
   const app = Fastify(options);
   const sms = deps.sms ?? new LogSmsSender(app.log);
+
+  void app.register(cors, {
+    origin: deps.corsOrigins ?? false,
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['authorization', 'content-type'],
+  });
 
   app.setErrorHandler((err, request, reply) => {
     if (err instanceof ApiError) return sendError(reply, err);
