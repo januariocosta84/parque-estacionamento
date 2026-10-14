@@ -219,8 +219,9 @@ model Payment {
 /// Append-only audit log (FR-26). UPDATE, DELETE and TRUNCATE are rejected by a trigger.
 model Event {
   id         String    @id @db.Uuid
-  /// Reference shown on receipts. TODO: final format (screens show EVT-00148-03) to be decided.
-  ref        String    @unique @default(dbgenerated("('EVT-'::text || lpad((nextval('event_ref_seq'::regclass))::text, 7, '0'::text))"))
+  /// Shown on tickets and receipts (docs/DECISIONS.md). Ticket events: EVT-<serial>-<nn>, set by
+  /// the API or phone. Other events (sign-in, admin): SYS-<n> from this default.
+  ref        String    @unique @default(dbgenerated("('SYS-'::text || lpad((nextval('event_ref_seq'::regclass))::text, 7, '0'::text))"))
   type       EventType
   at         DateTime  @db.Timestamptz(3)
   userId     String    @map("user_id") @db.Uuid
