@@ -10,3 +10,4 @@ export * from './api/health';
 export * from './api/auth';
 export * from './api/tickets';
 export * from './api/sync';
+export * from './api/console';
