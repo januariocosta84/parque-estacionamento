@@ -9,7 +9,7 @@ Release 1 in use by week 10. Work one milestone at a time; each ends with passin
 - [x] **M4 — Sync API**: device registration, serial block allocation, idempotent batch upload (outbox), pull changes since cursor; tests for duplicates and out-of-order uploads.
 - [x] **M5 — Agent app, offline core**: SQLite schema, outbox, background sync, sign-in with offline cache, PIN lockout.
 - [x] **M6 — Agent app screens**: Início, Novo título, Título emitido, Registar saída, Pagamento recebido, Histórico — matching `docs/screens`.
-- [ ] **M7 — Console**: sign-in, Monitorização (live totals, filters, active tickets, recent activity), daily revenue report, audit log view, admin (users, areas, classes, tariffs).
+- [x] **M7 — Console**: sign-in, Monitorização (live totals, filters, active tickets, recent activity), daily revenue report, audit log view, admin (users, areas, classes, tariffs).
 - [ ] **M8 — Hardening for pilot**: end-to-end test of the full ticket flow offline → online, security review, Android build (APK) and iOS build (EAS, internal distribution / TestFlight) for pilot phones, tested on a real device of each, deployment of API + console, backups.
 
 Release 2 (after pilot): FR-09 duplicate-plate warning, FR-11 SMS, FR-12 Bluetooth printer, FR-22 hourly chart, FR-24 alerts, FR-27 exports.
