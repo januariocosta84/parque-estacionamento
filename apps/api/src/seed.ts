@@ -35,6 +35,8 @@ export const SEED_SETTINGS: { [K in SettingKey]: unknown } = {
   chargingRule: { minimumHours: 1, graceMinutes: 0 }, // BR-02, BR-03
   pinMaxAttempts: 5, // TODO(AMD): FR-03 does not say how many
   serialBlockSize: 50, // CLAUDE.md rule 7
+  serialBlocksPerDevice: 2, // docs/DECISIONS.md
+  clockSkewWarnSeconds: 300, // docs/DECISIONS.md
   agentSessionHours: 24, // TODO(AMD): confirm
   consoleSessionHours: 8, // TODO(AMD): confirm
   loginCodeTtlMinutes: 5,

@@ -13,6 +13,10 @@ const settingSchemas = {
   pinMaxAttempts: z.int().min(1),
   /** FR-08: serial numbers handed to a device at a time. */
   serialBlockSize: z.int().min(1),
+  /** Open serial blocks a phone holds: one in use plus spares (docs/SYNC.md). */
+  serialBlocksPerDevice: z.int().min(1),
+  /** Phone clock this far off the server is flagged on synced events. */
+  clockSkewWarnSeconds: z.int().min(1),
   agentSessionHours: z.int().min(1),
   consoleSessionHours: z.int().min(1),
   loginCodeTtlMinutes: z.int().min(1),
