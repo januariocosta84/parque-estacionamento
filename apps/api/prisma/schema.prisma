@@ -184,6 +184,8 @@ model Ticket {
   status             TicketStatus @default(ATIVO)
   driverPhone        String?      @map("driver_phone")
   receivedAt         DateTime     @default(now()) @map("received_at") @db.Timestamptz(3)
+  /// Set by the guard_ticket_update trigger on every change; drives sync pull (docs/SYNC.md).
+  updatedAt          DateTime     @default(now()) @map("updated_at") @db.Timestamptz(3)
 
   vehicleClass VehicleClass @relation(fields: [vehicleClassId], references: [id])
   area         Area         @relation(fields: [areaId], references: [id])
@@ -196,6 +198,7 @@ model Ticket {
   @@index([status, entryAt])
   @@index([areaId, entryAt])
   @@index([agentId, entryAt])
+  @@index([areaId, updatedAt])
   @@map("tickets")
 }
 
