@@ -20,3 +20,6 @@ ios/
 # misc
 .DS_Store
 *.log
+
+# Prisma client (generated on install)
+apps/api/src/generated/

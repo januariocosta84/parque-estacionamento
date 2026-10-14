@@ -6,6 +6,8 @@ packages:
 onlyBuiltDependencies:
   - esbuild
   - unrs-resolver
+  - prisma
+  - '@prisma/engines'
 
 # Keep React Native peers on the versions Expo SDK 57 expects.
 overrides:

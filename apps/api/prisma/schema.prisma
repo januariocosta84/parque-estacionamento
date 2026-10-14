@@ -1,0 +1,282 @@
+// Data model from docs/REQUIREMENTS.md "Data".
+// Money is integer US-dollar cents. Times are timestamptz (UTC).
+// Append-only rules (events, payments) and ticket immutability are enforced by triggers in
+// migrations/*_immutability/migration.sql, not only in code (FR-26, NFR-07, BR-05–07).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  agent
+  supervisor
+  finance
+  auditor
+  admin
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+}
+
+enum DeviceStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum TicketStatus {
+  ATIVO
+  PAGO
+}
+
+enum PaymentMethod {
+  CASH
+}
+
+enum EventType {
+  ISSUE
+  EXIT
+  PAYMENT
+  PRINT
+  SMS
+  CORRECTION
+  SIGN_IN
+  ADMIN_CHANGE
+}
+
+model User {
+  id                String     @id @default(uuid()) @db.Uuid
+  name              String
+  /// Agents sign in with this, e.g. "AMD-017".
+  agentNumber       String?    @unique @map("agent_number")
+  /// Console users sign in with this.
+  username          String?    @unique
+  role              Role
+  status            UserStatus @default(ACTIVE)
+  phone             String?
+  pinHash           String?    @map("pin_hash")
+  passwordHash      String?    @map("password_hash")
+  failedPinAttempts Int        @default(0) @map("failed_pin_attempts")
+  createdAt         DateTime   @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt         DateTime   @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  areas        UserArea[]
+  devices      Device[]
+  sessions     Session[]
+  loginCodes   LoginCode[]
+  tickets      Ticket[]
+  payments     Payment[]
+  events       Event[]
+  tariffsSet   Tariff[]
+  serialBlocks SerialBlock[] @relation("allocatedBy")
+
+  @@map("users")
+}
+
+model Area {
+  id     String  @id @default(uuid()) @db.Uuid
+  name   String  @unique
+  active Boolean @default(true)
+
+  users   UserArea[]
+  tickets Ticket[]
+
+  @@map("areas")
+}
+
+model UserArea {
+  userId String @map("user_id") @db.Uuid
+  areaId String @map("area_id") @db.Uuid
+
+  user User @relation(fields: [userId], references: [id])
+  area Area @relation(fields: [areaId], references: [id])
+
+  @@id([userId, areaId])
+  @@map("user_areas")
+}
+
+model VehicleClass {
+  id     String  @id @default(uuid()) @db.Uuid
+  code   String  @unique
+  namePt String  @map("name_pt")
+  nameTet String @map("name_tet")
+  active Boolean @default(false)
+
+  tariffs Tariff[]
+  tickets Ticket[]
+
+  @@map("vehicle_classes")
+}
+
+model Tariff {
+  id             String    @id @default(uuid()) @db.Uuid
+  vehicleClassId String    @map("vehicle_class_id") @db.Uuid
+  centsPerHour   Int       @map("cents_per_hour")
+  validFrom      DateTime  @map("valid_from") @db.Timestamptz(3)
+  /// Exclusive. Null = still in force.
+  validUntil     DateTime? @map("valid_until") @db.Timestamptz(3)
+  changedById    String    @map("changed_by") @db.Uuid
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  vehicleClass VehicleClass @relation(fields: [vehicleClassId], references: [id])
+  changedBy    User         @relation(fields: [changedById], references: [id])
+
+  @@index([vehicleClassId, validFrom])
+  @@map("tariffs")
+}
+
+model Device {
+  /// Client-generated UUID, registered on first sign-in.
+  id               String       @id @db.Uuid
+  userId           String?      @map("user_id") @db.Uuid
+  status           DeviceStatus @default(ACTIVE)
+  /// Current serial block (FR-08); history is in serial_blocks.
+  serialBlockStart Int?         @map("serial_block_start")
+  serialBlockEnd   Int?         @map("serial_block_end")
+  lastSyncAt       DateTime?    @map("last_sync_at") @db.Timestamptz(3)
+  createdAt        DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user         User?         @relation(fields: [userId], references: [id])
+  serialBlocks SerialBlock[]
+  sessions     Session[]
+  tickets      Ticket[]
+  events       Event[]
+
+  @@map("devices")
+}
+
+/// Every serial block ever handed out. Blocks never overlap (checked by an exclusion constraint).
+model SerialBlock {
+  id            String   @id @default(uuid()) @db.Uuid
+  deviceId      String   @map("device_id") @db.Uuid
+  start         Int      @unique
+  end           Int      @unique
+  allocatedAt   DateTime @default(now()) @map("allocated_at") @db.Timestamptz(3)
+  allocatedById String   @map("allocated_by") @db.Uuid
+
+  device      Device @relation(fields: [deviceId], references: [id])
+  allocatedBy User   @relation("allocatedBy", fields: [allocatedById], references: [id])
+
+  @@map("serial_blocks")
+}
+
+model Ticket {
+  /// Client-generated UUID so offline sync is idempotent.
+  id                 String       @id @db.Uuid
+  serial             String       @unique
+  plate              String
+  vehicleClassId     String       @map("vehicle_class_id") @db.Uuid
+  areaId             String       @map("area_id") @db.Uuid
+  agentId            String       @map("agent_id") @db.Uuid
+  deviceId           String       @map("device_id") @db.Uuid
+  entryAt            DateTime     @map("entry_at") @db.Timestamptz(3)
+  exitAt             DateTime?    @map("exit_at") @db.Timestamptz(3)
+  hoursCharged       Int?         @map("hours_charged")
+  /// Tariff in force at issue (BR-04).
+  tariffCentsPerHour Int          @map("tariff_cents_per_hour")
+  amountCents        Int?         @map("amount_cents")
+  status             TicketStatus @default(ATIVO)
+  driverPhone        String?      @map("driver_phone")
+  receivedAt         DateTime     @default(now()) @map("received_at") @db.Timestamptz(3)
+
+  vehicleClass VehicleClass @relation(fields: [vehicleClassId], references: [id])
+  area         Area         @relation(fields: [areaId], references: [id])
+  agent        User         @relation(fields: [agentId], references: [id])
+  device       Device       @relation(fields: [deviceId], references: [id])
+  payment      Payment?
+  events       Event[]
+
+  @@index([plate])
+  @@index([status, entryAt])
+  @@index([areaId, entryAt])
+  @@index([agentId, entryAt])
+  @@map("tickets")
+}
+
+model Payment {
+  id          String        @id @db.Uuid
+  /// One payment per ticket (BR-06).
+  ticketId    String        @unique @map("ticket_id") @db.Uuid
+  receiptNo   String        @unique @map("receipt_no")
+  amountCents Int           @map("amount_cents")
+  method      PaymentMethod
+  receivedAt  DateTime      @map("received_at") @db.Timestamptz(3)
+  agentId     String        @map("agent_id") @db.Uuid
+
+  ticket Ticket @relation(fields: [ticketId], references: [id])
+  agent  User   @relation(fields: [agentId], references: [id])
+
+  @@index([receivedAt])
+  @@map("payments")
+}
+
+/// Append-only audit log (FR-26). UPDATE, DELETE and TRUNCATE are rejected by a trigger.
+model Event {
+  id         String    @id @db.Uuid
+  /// Reference shown on receipts. TODO: final format (screens show EVT-00148-03) to be decided.
+  ref        String    @unique @default(dbgenerated("('EVT-'::text || lpad((nextval('event_ref_seq'::regclass))::text, 7, '0'::text))"))
+  type       EventType
+  at         DateTime  @db.Timestamptz(3)
+  userId     String    @map("user_id") @db.Uuid
+  deviceId   String?   @map("device_id") @db.Uuid
+  ticketId   String?   @map("ticket_id") @db.Uuid
+  details    Json      @default("{}")
+  receivedAt DateTime  @default(now()) @map("received_at") @db.Timestamptz(3)
+
+  user   User    @relation(fields: [userId], references: [id])
+  device Device? @relation(fields: [deviceId], references: [id])
+  ticket Ticket? @relation(fields: [ticketId], references: [id])
+
+  @@index([at])
+  @@index([ticketId])
+  @@index([userId, at])
+  @@map("events")
+}
+
+/// Signed-in session. The token itself is never stored, only its SHA-256 hash.
+model Session {
+  id        String    @id @default(uuid()) @db.Uuid
+  tokenHash String    @unique @map("token_hash")
+  userId    String    @map("user_id") @db.Uuid
+  deviceId  String?   @map("device_id") @db.Uuid
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  revokedAt DateTime? @map("revoked_at") @db.Timestamptz(3)
+
+  user   User    @relation(fields: [userId], references: [id])
+  device Device? @relation(fields: [deviceId], references: [id])
+
+  @@index([userId])
+  @@map("sessions")
+}
+
+/// One-time SMS code for console sign-in (FR-04).
+model LoginCode {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  codeHash  String    @map("code_hash")
+  attempts  Int       @default(0)
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(3)
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(3)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("login_codes")
+}
+
+/// Configurable values that AMD has not fixed yet (charging rule, PIN lockout, block size, …).
+model Setting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  @@map("settings")
+}

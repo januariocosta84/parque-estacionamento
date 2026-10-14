@@ -13,3 +13,4 @@ next-env.d.ts
 docs
 CLAUDE.md
 PROMPTS.md
+apps/api/src/generated
