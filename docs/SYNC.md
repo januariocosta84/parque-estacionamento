@@ -1,4 +1,4 @@
-# Sync protocol (M4) — draft for review
+# Sync protocol (M4)
 
 How the agent app works offline and catches up later without losing or duplicating tickets
 (NFR-01, FR-02, FR-08). The phone is the source of truth for what the agent did; the server is the
@@ -95,10 +95,19 @@ item and shows the agent a message. The data is never silently dropped.
 When the app opens, after each issue or exit, every 2 minutes while the app is open, and when the
 network comes back. One sync = push the outbox, then pull, then top up serial blocks if needed.
 
-## Open questions
+## Decided (2026-10-14)
 
-1. **Lost or stolen phone (FR-05):** when the server answers `DEVICE_BLOCKED`, should the app also
-   **wipe** its local data? Tickets not yet synced would be lost. My proposal: lock the app, keep
-   the encrypted data, and let a supervisor recover it from the device later.
-2. **Clock skew limit:** 5 minutes before flagging, kept in settings. OK?
-3. **Two blocks of 50** (50–100 tickets offline). Enough for a shift without signal?
+1. **Blocked phone (FR-05):** the app locks and signs out, but keeps its encrypted local data so
+   unsynced tickets are not lost. A supervisor recovers them from the device later.
+2. **Clock skew:** flagged above 5 minutes (`settings.clockSkewWarnSeconds` = 300).
+3. **Serial blocks:** each phone holds two blocks of 50, i.e. 50–100 tickets offline.
+
+## Notes for the app (M5)
+
+- Outbox items carry no agent id. They are pushed with the session of the agent who created them.
+  If a second agent signs in on the same phone, the first agent's outbox waits for that agent's
+  next online sign-in.
+- Event references (`EVT-<serial>-<nn>`) are not sent. Phone and server both derive them with
+  `ticketEventRef` from `packages/shared`.
+- `GET /sync/pull` also returns `closedTicketIds`: tickets in the agent's areas closed by someone
+  else, so the parked list stays right without revealing other agents' revenue.
