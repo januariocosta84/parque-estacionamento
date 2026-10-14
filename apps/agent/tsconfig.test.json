@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"]
+  },
+  "include": ["test", "src/**/*.ts", "vitest.config.ts"],
+  "exclude": ["src/db/expo.ts", "src/**/*.tsx"]
+}
