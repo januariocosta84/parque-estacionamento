@@ -8,6 +8,9 @@ import { mergeSerialBlocks, remainingSerials } from '../src/local/serials';
 import {
   LocalError,
   closeTicket,
+  getReceipt,
+  getTicket,
+  lastEventRefOf,
   issueRefOf,
   issueTicket,
   myTicketsForDay,
@@ -113,6 +116,10 @@ describe('exit and payment offline', () => {
 
     const kinds = (await queuedFor(env.db, agentUser.id, 10)).map((r) => r.kind);
     expect(kinds).toEqual(['TICKET_ISSUED', 'TICKET_CLOSED']);
+
+    // The receipt screen rebuilds the same receipt from the phone's records.
+    expect(await getReceipt(env.db, session(), t.id)).toEqual(receipt);
+    expect(lastEventRefOf((await getTicket(env.db, t.id))!)).toBe('EVT-2538668-03');
 
     await expect(
       closeTicket(env, session(), t.id, { expectedAmountCents: 100, receivedCents: 100 }),

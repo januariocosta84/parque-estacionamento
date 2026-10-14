@@ -68,6 +68,18 @@ export async function getTariffs(db: SqlDb, vehicleClassId: string): Promise<Tar
   }));
 }
 
+/** The agent's areas, by name. */
+export async function getMyAreas(
+  db: SqlDb,
+  areaIds: string[],
+): Promise<{ id: string; name: string }[]> {
+  if (areaIds.length === 0) return [];
+  return db.all(
+    `SELECT id, name FROM areas WHERE id IN (${areaIds.map(() => '?').join(',')}) ORDER BY name`,
+    ...areaIds,
+  );
+}
+
 /** Replace all reference data with what the server sent (it is small, sent whole each pull). */
 export async function replaceReference(tx: SqlDb, pull: PullResponse): Promise<void> {
   await tx.run('DELETE FROM areas');

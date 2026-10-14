@@ -48,6 +48,10 @@ interface AppContextValue {
   signOut(): Promise<void>;
   sync: SyncStatus;
   syncNow(): Promise<void>;
+  /** Changes whenever local data may have changed; screens reload when it does. */
+  dataVersion: number;
+  /** Call after writing a ticket: refreshes screens and starts a sync in the background. */
+  afterWrite(): void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -70,6 +74,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     rejected: 0,
   });
   const runner = useRef<SyncRunner | null>(null);
+  const [dataVersion, setDataVersion] = useState(0);
 
   useEffect(() => {
     void (async () => {
@@ -114,6 +119,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       return;
     }
     await refreshCounts(report.state);
+    setDataVersion((v) => v + 1);
   }, [env, session, refreshCounts]);
 
   // Sync on sign-in, every 2 minutes, when the app comes to the front, and when signal returns.
@@ -165,8 +171,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
       sync,
       syncNow,
+      dataVersion,
+      afterWrite: () => {
+        setDataVersion((v) => v + 1);
+        void refreshCounts();
+        void syncNow(); // docs/SYNC.md §6: sync after each issue or exit
+      },
     }),
-    [status, env, session, locale, sync, syncNow],
+    [status, env, session, locale, sync, syncNow, dataVersion, refreshCounts],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

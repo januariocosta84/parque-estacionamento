@@ -303,6 +303,44 @@ export async function closeTicket(
   };
 }
 
+/** Receipt for a payment taken on this phone (FR-16), or null if it was not paid here. */
+export async function getReceipt(
+  db: SqlDb,
+  session: Session,
+  ticketId: string,
+): Promise<Receipt | null> {
+  const t = await getTicket(db, ticketId);
+  if (!t || t.status !== 'PAGO' || !t.exitAt || t.paidBy !== session.user.id) return null;
+  const serialNumber = parseSerial(t.serial)!;
+  return {
+    ticketId: t.id,
+    receiptNo: receiptNumber(serialNumber),
+    serial: t.serial,
+    plate: t.plate,
+    vehicleClassId: t.vehicleClassId,
+    entryAt: t.entryAt,
+    exitAt: t.exitAt,
+    hoursCharged: t.hoursCharged!,
+    tariffCentsPerHour: t.tariffCentsPerHour,
+    amountCents: t.amountCents!,
+    receivedCents: t.receivedCents ?? t.amountCents!,
+    changeCents: t.changeCents ?? 0,
+    method: 'CASH',
+    agent: { id: session.user.id, name: session.user.name, agentNumber: session.user.agentNumber },
+    paymentRef: ticketEventRef(serialNumber, TICKET_EVENT_SLOT.PAYMENT),
+    paidAt: t.exitAt,
+  };
+}
+
+/** Reference of the latest event on a ticket, as the history list shows it. */
+export function lastEventRefOf(ticket: Pick<Ticket, 'serial' | 'status'>): string {
+  const n = parseSerial(ticket.serial)!;
+  return ticketEventRef(
+    n,
+    ticket.status === 'PAGO' ? TICKET_EVENT_SLOT.PAYMENT : TICKET_EVENT_SLOT.ISSUE,
+  );
+}
+
 // ── Lists (FR-13, FR-18, FR-19) ─────────────────────────────────────────────
 
 /** Vehicles parked in my areas, oldest first (home screen, FR-13). */

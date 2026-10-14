@@ -5,5 +5,5 @@
     "types": ["node"]
   },
   "include": ["test", "src/**/*.ts", "vitest.config.ts"],
-  "exclude": ["src/db/expo.ts", "src/**/*.tsx"]
+  "exclude": ["src/db/expo.ts", "src/**/*.tsx", "src/hooks.ts"]
 }
