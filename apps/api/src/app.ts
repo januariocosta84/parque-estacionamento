@@ -7,6 +7,7 @@ import type { Db } from './db';
 import { ApiError, sendError } from './http';
 import { LogSmsSender } from './sms';
 import type { SmsSender } from './sms';
+import { registerSyncRoutes } from './sync/routes';
 import { registerTicketRoutes } from './tickets/routes';
 
 export interface AppDeps {
@@ -38,6 +39,7 @@ export function buildApp(deps: AppDeps, options: FastifyServerOptions = {}) {
 
   registerAuthRoutes(app, deps.db, sms);
   registerTicketRoutes(app, deps.db);
+  registerSyncRoutes(app, deps.db);
 
   return app;
 }
