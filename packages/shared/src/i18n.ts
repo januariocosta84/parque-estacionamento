@@ -4,6 +4,8 @@
 // TODO(AMD): the Tetum strings are a first draft and must be reviewed by a native speaker.
 // Vehicle class names are not here: they live in the database (namePt / nameTet).
 
+import { formatDiliDate } from './time';
+
 export const locales = ['pt', 'tet'] as const;
 export type Locale = (typeof locales)[number];
 export const defaultLocale: Locale = 'pt';
@@ -63,6 +65,22 @@ const pt = {
   'blocked.text':
     'O supervisor bloqueou este telemóvel. Os registos ficam guardados. Contacte o supervisor.',
   'home.signOut': 'Sair',
+  /** Comma-separated, January first. */
+  'months.short': 'jan,fev,mar,abr,mai,jun,jul,ago,set,out,nov,dez',
+
+  // ── Agent: errors on the phone ──
+  'error.NO_SERIALS': 'Acabaram os números de título. Ligue-se à rede para receber mais.',
+  'error.NOT_SYNCED_YET': 'Ainda sem dados do servidor. Ligue-se à rede uma vez para sincronizar.',
+  'error.VEHICLE_CLASS_INACTIVE': 'Este tipo de veículo ainda não está em uso.',
+  'error.NO_TARIFF': 'Não há tarifa em vigor para este tipo de veículo.',
+  'error.AREA_REQUIRED': 'Escolha a área.',
+  'error.NOT_FOUND': 'Título não encontrado.',
+  'error.FORBIDDEN': 'Este título não é de uma das suas áreas.',
+  'error.ALREADY_PAID': 'Este título já foi pago e encerrado.',
+  'error.CHARGE_CHANGED': 'Começou uma nova hora. Novo total: {amount}. Confirme de novo.',
+  'error.INSUFFICIENT_PAYMENT': 'O valor recebido é menor do que o total a pagar.',
+  'error.PLATE_REQUIRED': 'Escreva a matrícula.',
+  'error.INVALID_AMOUNT': 'Valor inválido. Exemplo: 2,50',
 
   // ── Agent: home (01) ──
   'home.parked': 'Estacionados',
@@ -95,6 +113,7 @@ const pt = {
   'issued.copies': '3 cópias digitais',
   'issued.inRecord': 'No registo',
   'issued.recordExit': 'Registar saída',
+  'issued.copiesNote': 'Branca: condutor · Amarela: Finanças da AMD · Vermelha: auditoria.',
 
   // ── Agent: record exit (04) ──
   'exit.eyebrow': 'Estacionamento · Cálculo',
@@ -108,6 +127,9 @@ const pt = {
   'exit.totalDue': 'Total a pagar',
   'exit.ruleNote': 'Cada hora iniciada conta como uma hora completa: 1 h 45 min → 2 h.',
   'exit.confirm': 'Confirmar saída e pagamento',
+  'exit.received': 'Valor recebido (US$)',
+  'exit.change': 'Troco',
+  'exit.hoursTimesTariff': '{hours} h × {tariff}',
 
   // ── Agent: payment received (05) ──
   'receipt.eyebrow': 'Estacionamento · Recibo',
@@ -122,6 +144,8 @@ const pt = {
   'receipt.agent': 'Agente',
   'receipt.registeredAt': 'Pagamento registado às {time}',
   'receipt.backHome': 'Voltar ao início',
+  'receipt.change': 'Troco',
+  'newTicket.area': 'Área',
 
   // ── Agent: history (06) ──
   'history.eyebrow': 'Estacionamento · Auditoria',
@@ -259,6 +283,21 @@ const tet: Record<MessageKey, string> = {
   'blocked.text':
     "Supervizór blokeia telemovel ida-ne'e. Rejistu sira rai nafatin. Kontaktu supervizór.",
   'home.signOut': 'Sai',
+  'months.short': 'jan,fev,mar,abr,mai,jun,jul,ago,set,out,nov,dez',
+
+  // ── Agent: errors on the phone ──
+  'error.NO_SERIALS': 'Númeru títulu hotu ona. Liga ba rede atu simu tan.',
+  'error.NOT_SYNCED_YET': 'Seidauk iha dadus husi servidór. Liga ba rede dala ida atu sinkroniza.',
+  'error.VEHICLE_CLASS_INACTIVE': "Tipu veíkulu ne'e seidauk uza.",
+  'error.NO_TARIFF': "Laiha tarifa ba tipu veíkulu ne'e.",
+  'error.AREA_REQUIRED': 'Hili área.',
+  'error.NOT_FOUND': 'Títulu la hetan.',
+  'error.FORBIDDEN': "Títulu ne'e la'ós husi ita-nia área.",
+  'error.ALREADY_PAID': "Títulu ne'e selu ona no taka ona.",
+  'error.CHARGE_CHANGED': 'Oras foun hahú ona. Totál foun: {amount}. Konfirma fali.',
+  'error.INSUFFICIENT_PAYMENT': "Osan ne'ebé simu menus duké totál atu selu.",
+  'error.PLATE_REQUIRED': 'Hakerek matríkula.',
+  'error.INVALID_AMOUNT': 'Valór la loos. Ezemplu: 2,50',
 
   // ── Agent: home (01) ──
   'home.parked': 'Estasionadu',
@@ -291,6 +330,7 @@ const tet: Record<MessageKey, string> = {
   'issued.copies': 'Kópia dijitál 3',
   'issued.inRecord': 'Iha rejistu',
   'issued.recordExit': 'Rejista sai',
+  'issued.copiesNote': 'Mutin: kondutór · Kinur: Finansas AMD · Mean: auditoria.',
 
   // ── Agent: record exit (04) ──
   'exit.eyebrow': 'Estasionamentu · Kálkulu',
@@ -304,6 +344,9 @@ const tet: Record<MessageKey, string> = {
   'exit.totalDue': 'Totál atu selu',
   'exit.ruleNote': "Oras ida ne'ebé hahú konta hanesan oras tomak ida: 1 h 45 min → 2 h.",
   'exit.confirm': 'Konfirma sai no pagamentu',
+  'exit.received': "Osan ne'ebé simu (US$)",
+  'exit.change': 'Troku',
+  'exit.hoursTimesTariff': '{hours} h × {tariff}',
 
   // ── Agent: payment received (05) ──
   'receipt.eyebrow': 'Estasionamentu · Resibu',
@@ -318,6 +361,8 @@ const tet: Record<MessageKey, string> = {
   'receipt.agent': 'Ajente',
   'receipt.registeredAt': 'Pagamentu rejista iha oras {time}',
   'receipt.backHome': 'Fila ba iníciu',
+  'receipt.change': 'Troku',
+  'newTicket.area': 'Área',
 
   // ── Agent: history (06) ──
   'history.eyebrow': 'Estasionamentu · Auditoria',
@@ -413,6 +458,13 @@ export function translate(locale: Locale, key: MessageKey, params?: MessageParam
 /** Translate in the default locale (Portuguese). */
 export function t(key: MessageKey, params?: MessageParams): string {
   return translate(defaultLocale, key, params);
+}
+
+/** "13 out 2026", in Dili time. */
+export function formatDiliDayLong(locale: Locale, at: Date): string {
+  const [dd, mm, yyyy] = formatDiliDate(at).split('/');
+  const month = translate(locale, 'months.short').split(',')[Number(mm) - 1];
+  return `${Number(dd)} ${month} ${yyyy}`;
 }
 
 /** "1 hora", "2 horas" */

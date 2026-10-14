@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { defaultLocale, formatHours, locales, messages, t, translate } from './i18n';
+import {
+  defaultLocale,
+  formatDiliDayLong,
+  formatHours,
+  locales,
+  messages,
+  t,
+  translate,
+} from './i18n';
 import type { MessageKey } from './i18n';
 
 const placeholders = (text: string) => [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
@@ -35,6 +43,12 @@ describe('i18n', () => {
 
   it('leaves unknown placeholders visible rather than blank', () => {
     expect(t('home.seeAll')).toBe('Ver todos · {count}');
+  });
+
+  it('formats a Dili day like the screens: "13 out 2026"', () => {
+    expect(formatDiliDayLong('pt', new Date('2026-10-13T00:20:00Z'))).toBe('13 out 2026');
+    expect(formatDiliDayLong('pt', new Date('2026-01-01T03:00:00Z'))).toBe('1 jan 2026');
+    expect(translate('tet', 'months.short').split(',')).toHaveLength(12);
   });
 
   it('formats hours with the right plural', () => {
