@@ -65,7 +65,7 @@ describe.skipIf(!hasTestDb)('database guarantees', () => {
   describe('events are append-only (trigger)', () => {
     it('allows INSERT and gives each event a reference', async () => {
       const event = await writeEvent(db, { type: 'SIGN_IN', userId: agentId });
-      expect(event.ref).toMatch(/^EVT-\d{7}$/);
+      expect(event.ref).toMatch(/^SYS-\d{7}$/);
     });
 
     it('rejects UPDATE', async () => {

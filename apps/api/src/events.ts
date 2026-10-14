@@ -15,12 +15,15 @@ export interface NewEvent {
   at?: Date;
   /** Client-generated for events created on a phone (idempotent sync). */
   id?: string;
+  /** Ticket events: EVT-<serial>-<nn> (refs.ts). Omitted: the database assigns SYS-<n>. */
+  ref?: string;
 }
 
 export function writeEvent(db: Tx, event: NewEvent) {
   return db.event.create({
     data: {
       id: event.id ?? randomUUID(),
+      ...(event.ref ? { ref: event.ref } : {}),
       type: event.type,
       at: event.at ?? new Date(),
       userId: event.userId,

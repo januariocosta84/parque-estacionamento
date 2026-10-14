@@ -62,3 +62,14 @@ export async function createConsoleUser(
 }
 
 export const newDeviceId = () => randomUUID();
+
+let nextBlockStart = 5_000_000;
+/** Allocate a fresh serial block to a device directly in the database (the API comes in M4). */
+export async function allocateTestBlock(db: Db, deviceId: string, size = 50) {
+  const admin = await db.user.findUniqueOrThrow({ where: { username: 'admin' } });
+  const start = nextBlockStart;
+  nextBlockStart += 1000;
+  return db.serialBlock.create({
+    data: { deviceId, start, end: start + size - 1, allocatedById: admin.id },
+  });
+}

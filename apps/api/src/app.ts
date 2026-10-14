@@ -7,6 +7,7 @@ import type { Db } from './db';
 import { ApiError, sendError } from './http';
 import { LogSmsSender } from './sms';
 import type { SmsSender } from './sms';
+import { registerTicketRoutes } from './tickets/routes';
 
 export interface AppDeps {
   db: Db;
@@ -19,6 +20,9 @@ export function buildApp(deps: AppDeps, options: FastifyServerOptions = {}) {
 
   app.setErrorHandler((err, request, reply) => {
     if (err instanceof ApiError) return sendError(reply, err);
+    if ((err as { code?: string }).code === 'P2002') {
+      return sendError(reply, new ApiError('CONFLICT', 'Already exists'));
+    }
     const status = (err as { statusCode?: number }).statusCode;
     if (status && status >= 400 && status < 500) {
       return sendError(reply, new ApiError('BAD_REQUEST', (err as Error).message));
@@ -33,6 +37,7 @@ export function buildApp(deps: AppDeps, options: FastifyServerOptions = {}) {
   });
 
   registerAuthRoutes(app, deps.db, sms);
+  registerTicketRoutes(app, deps.db);
 
   return app;
 }
