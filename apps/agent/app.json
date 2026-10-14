@@ -6,10 +6,16 @@
     "version": "0.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
-    "platforms": ["android"],
+    "platforms": ["android", "ios"],
     "android": {
-      "package": "tl.gov.amd.estacionamento",
-      "edgeToEdgeEnabled": true
+      "package": "tl.gov.amd.estacionamento"
+    },
+    "ios": {
+      "bundleIdentifier": "tl.gov.amd.estacionamento",
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "plugins": ["expo-router", "expo-sqlite", "expo-secure-store"]
   }

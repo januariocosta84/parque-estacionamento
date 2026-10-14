@@ -17,7 +17,7 @@ Monorepo with pnpm workspaces + Turborepo, TypeScript everywhere (strict mode).
 
 | Path              | What                                                            | Tech                                                             |
 | ----------------- | --------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `apps/agent`      | Agent phone app (Android first)                                 | Expo (React Native), expo-router, expo-sqlite, expo-secure-store |
+| `apps/agent`      | Agent phone app (Android APK and iOS)                           | Expo (React Native), expo-router, expo-sqlite, expo-secure-store |
 | `apps/console`    | Supervisor / Finance / Audit / Admin web console                | Next.js (App Router), Tailwind CSS                               |
 | `apps/api`        | REST API and sync service                                       | Node.js, Fastify, Prisma, PostgreSQL                             |
 | `packages/shared` | Types, zod schemas, charging rules, serial format, i18n strings | TypeScript                                                       |
