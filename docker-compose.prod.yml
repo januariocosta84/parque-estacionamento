@@ -1,0 +1,98 @@
+# Production stack for one Linux server (docs/DEPLOY.md).
+#   cp .env.production.example .env.production   # fill in every value
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# Only Caddy is reachable from outside (ports 80/443). PostgreSQL, the API and the console are
+# on the internal network.
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?}
+      POSTGRES_DB: ${POSTGRES_DB:?}
+      TZ: UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  # One-off on every deploy: migrations, the restricted app role, reference data (as table owner).
+  migrate:
+    build: { context: ., dockerfile: docker/api.Dockerfile, target: migrate }
+    restart: 'no'
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      APP_DB_USER: ${APP_DB_USER:?}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD:?}
+      SEED_ADMIN_USERNAME: ${SEED_ADMIN_USERNAME:-admin}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:?}
+      SEED_ADMIN_PHONE: ${SEED_ADMIN_PHONE:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  api:
+    build: { context: ., dockerfile: docker/api.Dockerfile, target: runtime }
+    restart: unless-stopped
+    environment:
+      # The restricted role: cannot disable the append-only triggers (docs/SECURITY.md).
+      DATABASE_URL: postgresql://${APP_DB_USER}:${APP_DB_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      API_HOST: 0.0.0.0
+      API_PORT: '3001'
+      CORS_ORIGINS: https://${CONSOLE_DOMAIN}
+      TRUST_PROXY: 'true'
+      SMS_PROVIDER: ${SMS_PROVIDER:-stub}
+      ALLOW_SMS_STUB: ${ALLOW_SMS_STUB:-false}
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  console:
+    build: { context: ., dockerfile: docker/console.Dockerfile }
+    restart: unless-stopped
+    environment:
+      API_URL: http://api:3001
+    depends_on:
+      - api
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      API_DOMAIN: ${API_DOMAIN:?}
+      CONSOLE_DOMAIN: ${CONSOLE_DOMAIN:?}
+    volumes:
+      - ./docker/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+      - console
+
+  # Daily pg_dump into ./backups (NFR-09). Copy that folder off the server too.
+  backup:
+    image: postgres:17
+    restart: unless-stopped
+    entrypoint: ['sh', '/backup.sh']
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_DB: ${POSTGRES_DB}
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_KEEP_DAYS: ${BACKUP_KEEP_DAYS:?}
+    volumes:
+      - ./docker/backup.sh:/backup.sh:ro
+      - ./backups:/backups
+    depends_on:
+      postgres: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  caddy_data:
+  caddy_config:

@@ -16,6 +16,7 @@ ios/
 .env
 .env.*
 !.env.example
+!.env.production.example
 
 # misc
 .DS_Store
@@ -23,3 +24,6 @@ ios/
 
 # Prisma client (generated on install)
 apps/api/src/generated/
+
+# Database backups (docker-compose.prod.yml)
+backups/
