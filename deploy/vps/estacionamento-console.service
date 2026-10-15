@@ -1,0 +1,31 @@
+# Console on a shared server without Docker (docs/DEPLOY.md "Shared server").
+[Unit]
+Description=Estacionamento Dili console
+After=network-online.target estacionamento-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=estacionamento
+Group=estacionamento
+WorkingDirectory=/opt/estacionamento-dili/apps/console/.next/standalone
+EnvironmentFile=/etc/estacionamento/console.env
+ExecStart=/usr/bin/node apps/console/server.js
+Restart=on-failure
+RestartSec=5
+
+NoNewPrivileges=true
+ProtectSystem=strict
+# Next.js writes its cache here
+ReadWritePaths=/opt/estacionamento-dili/apps/console/.next/standalone/apps/console/.next
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+
+[Install]
+WantedBy=multi-user.target

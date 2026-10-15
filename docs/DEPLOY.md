@@ -93,3 +93,55 @@ took.
 - `docker compose -f docker-compose.prod.yml --env-file .env.production ps` — all services `running`
   (`migrate` `exited (0)`).
 - Logs: `docker compose … logs -f api` (JSON, one line per request).
+
+---
+
+# Shared server without Docker (pilot VPS)
+
+The pilot runs on a VPS that already hosts other sites behind nginx, so it uses the server's own
+Node 24, PostgreSQL 16, nginx and certbot instead of Docker (Docker rewrites firewall rules and could
+affect the other services). Files: `deploy/vps/`.
+
+| Piece | Where |
+| --- | --- |
+| Code | `/opt/estacionamento-dili` (git clone), owned by root, run as system user `estacionamento` |
+| Settings | `/etc/estacionamento/{api,console,migrate}.env` (root only, mode 600) |
+| Database | `estacionamento` in the server's PostgreSQL; owner `estacionamento_owner` (has `CREATEROLE` only to manage the app role), API connects as `estacionamento_app` |
+| Services | `estacionamento-api` (127.0.0.1:3201), `estacionamento-console` (127.0.0.1:3200) — systemd, hardened |
+| Web | `/etc/nginx/sites-available/estacionamento`, HTTPS by certbot |
+| Backups | `/etc/cron.daily/estacionamento-backup` → `/var/backups/estacionamento/` |
+| First admin password | `/root/estacionamento-admin.txt` (root only) |
+
+## Update
+
+```sh
+# on your PC
+git bundle create estacionamento.bundle main && scp estacionamento.bundle root@<server>:/root/
+# on the server
+cd /opt/estacionamento-dili && git pull /root/estacionamento.bundle main
+pnpm install --frozen-lockfile --filter "@estacionamento/api..." --filter "@estacionamento/console..."
+pnpm --filter @estacionamento/api build && pnpm --filter @estacionamento/console build
+cp -r apps/console/.next/static apps/console/.next/standalone/apps/console/.next/static
+chown -R estacionamento:estacionamento apps/console/.next/standalone/apps/console/.next
+(cd apps/api && set -a && . /etc/estacionamento/migrate.env && set +a && \
+  pnpm exec prisma migrate deploy && pnpm exec tsx scripts/apply-app-role.ts && pnpm exec prisma db seed)
+systemctl restart estacionamento-api estacionamento-console
+```
+
+## Logs and console sign-in codes
+
+```sh
+journalctl -u estacionamento-api -f
+journalctl -u estacionamento-api | grep "SMS stub" | tail -1     # latest console sign-in code
+```
+
+## Restore
+
+```sh
+systemctl stop estacionamento-api estacionamento-console
+sudo -u postgres dropdb --force estacionamento
+sudo -u postgres createdb -O estacionamento_owner estacionamento
+sudo -u postgres pg_restore -d estacionamento --no-owner --role=estacionamento_owner /var/backups/estacionamento/estacionamento-<time>.dump
+(cd /opt/estacionamento-dili/apps/api && set -a && . /etc/estacionamento/migrate.env && set +a && pnpm exec tsx scripts/apply-app-role.ts)
+systemctl start estacionamento-api estacionamento-console
+```

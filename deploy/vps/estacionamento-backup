@@ -1,0 +1,23 @@
+#!/bin/sh
+# Daily backup of the Estacionamento Dili database only (NFR-09).
+# Install: cp to /etc/cron.daily/estacionamento-backup && chmod 755 it.
+# Restore: see docs/DEPLOY.md "Shared server".
+set -eu
+
+KEEP_DAYS=14   # TODO(AMD): confirm how many days of backups to keep on the server
+DIR=/var/backups/estacionamento
+
+umask 077
+mkdir -p "$DIR"
+stamp=$(date -u +%Y%m%d-%H%M%S)
+file="$DIR/estacionamento-$stamp.dump"
+
+if su postgres -s /bin/sh -c "pg_dump --format=custom estacionamento" > "$file.partial"; then
+  mv "$file.partial" "$file"
+  logger -t estacionamento-backup "ok $file $(du -h "$file" | cut -f1)"
+else
+  rm -f "$file.partial"
+  logger -t estacionamento-backup "FAILED $stamp"
+  exit 1
+fi
+find "$DIR" -name 'estacionamento-*.dump' -mtime +"$KEEP_DAYS" -delete
