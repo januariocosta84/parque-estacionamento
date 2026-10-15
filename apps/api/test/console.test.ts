@@ -1,6 +1,7 @@
 // M7 console read views: reference, live totals, audit log, daily report — and their scoping.
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import {
+  agentsResponseSchema,
   dailyReportResponseSchema,
   listEventsResponseSchema,
   monitorResponseSchema,
@@ -153,6 +154,20 @@ describe.skipIf(!hasTestDb)('console views (M7)', () => {
       expect(all.total).toBeGreaterThan(mine.total);
       const finance = await consoleSession(app, db, sms, 'finance');
       expect((await get('/events', finance.headers)).statusCode).toBe(403);
+    });
+  });
+
+  describe('GET /agents (FR-03, FR-05)', () => {
+    it('the supervisor sees their agents, status and phones; finance may not', async () => {
+      const res = agentsResponseSchema.parse((await get('/agents', supX.headers)).json());
+      expect(res.agents.map((a) => a.id).sort()).toEqual([a1.agent.id, a2.agent.id].sort());
+      const first = res.agents.find((a) => a.id === a1.agent.id)!;
+      expect(first.status).toBe('ACTIVE');
+      expect(first.devices).toHaveLength(1);
+      expect(first.devices[0]).toMatchObject({ status: 'ACTIVE' });
+
+      const finance = await consoleSession(app, db, sms, 'finance');
+      expect((await get('/agents', finance.headers)).statusCode).toBe(403);
     });
   });
 

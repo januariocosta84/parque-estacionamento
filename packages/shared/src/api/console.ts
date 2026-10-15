@@ -38,6 +38,24 @@ export const referenceResponseSchema = z.object({
 });
 export type ReferenceResponse = z.infer<typeof referenceResponseSchema>;
 
+/** GET /agents — the supervisor's agents with their status and phones (FR-03, FR-05). */
+export const agentsResponseSchema = z.object({
+  agents: z.array(
+    agentSummarySchema.extend({
+      status: userStatusSchema,
+      devices: z.array(
+        z.object({
+          id: idSchema,
+          status: z.enum(['ACTIVE', 'BLOCKED']),
+          lastSyncAt: timestampSchema.nullable(),
+          createdAt: timestampSchema,
+        }),
+      ),
+    }),
+  ),
+});
+export type AgentsResponse = z.infer<typeof agentsResponseSchema>;
+
 /** GET /monitor — live totals (FR-20). */
 export const monitorResponseSchema = z.object({
   date: z.iso.date(),

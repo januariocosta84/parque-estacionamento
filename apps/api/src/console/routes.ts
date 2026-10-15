@@ -8,6 +8,7 @@ import {
   listEventsQuerySchema,
 } from '@estacionamento/shared';
 import type {
+  AgentsResponse,
   ConsoleFilters,
   DailyReportResponse,
   ListEventsResponse,
@@ -79,6 +80,38 @@ export function registerConsoleRoutes(app: FastifyInstance, db: Db) {
           name: a.name,
           agentNumber: a.agentNumber,
           areaIds: a.areas.map((x) => x.areaId),
+        })),
+      };
+    },
+  );
+
+  // ── Agents and their phones, for PIN reset and blocking (FR-03, FR-05) ─────
+  app.get(
+    '/agents',
+    { preHandler: requireRole(db, 'supervisor', 'admin') },
+    async (request): Promise<AgentsResponse> => {
+      const scope = areaScope(authOf(request));
+      const agents = await db.user.findMany({
+        where: {
+          role: 'agent',
+          ...(scope ? { areas: { some: { areaId: { in: scope } } } } : {}),
+        },
+        include: { areas: true, devices: { orderBy: { createdAt: 'desc' } } },
+        orderBy: { agentNumber: 'asc' },
+      });
+      return {
+        agents: agents.map((a) => ({
+          id: a.id,
+          name: a.name,
+          agentNumber: a.agentNumber,
+          areaIds: a.areas.map((x) => x.areaId),
+          status: a.status,
+          devices: a.devices.map((d) => ({
+            id: d.id,
+            status: d.status,
+            lastSyncAt: d.lastSyncAt?.toISOString() ?? null,
+            createdAt: d.createdAt.toISOString(),
+          })),
         })),
       };
     },
