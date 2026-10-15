@@ -37,3 +37,29 @@ jobs:
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
+      - run: pnpm build
+
+      # End to end (M8): the phone's offline code against the built API on a real PostgreSQL —
+      # sign in, go offline, issue and close tickets, come back online, sync exactly once.
+      - name: Seed test database with a dev agent
+        run: pnpm --filter @estacionamento/api db:seed
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL_TEST }}
+          SEED_ADMIN_PASSWORD: ci-only-admin-password
+          SEED_DEV_AGENT_PIN: '246810'
+      - name: Start the built API
+        run: node apps/api/dist/server.js > api.log 2>&1 &
+        env:
+          DATABASE_URL: ${{ env.DATABASE_URL_TEST }}
+          API_PORT: '3003'
+      - name: Wait for the API
+        run: for i in $(seq 1 30); do curl -sf localhost:3003/health && exit 0; sleep 1; done; exit 1
+      - name: End-to-end test (offline → online)
+        run: pnpm --filter @estacionamento/agent exec vitest run test/e2e.test.ts
+        env:
+          AGENT_E2E_API_URL: http://localhost:3003
+          AGENT_E2E_AGENT: AMD-001
+          AGENT_E2E_PIN: '246810'
+      - name: API log
+        if: failure()
+        run: cat api.log
