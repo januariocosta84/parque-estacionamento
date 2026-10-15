@@ -19,7 +19,7 @@ NFR-07 (every sign-in and change logged) and CLAUDE.md rules 5 and 8. Date: 2026
 | Browser | Console: `frame-ancestors 'none'`, nosniff, referrer policy; server actions check the origin. API: CORS only for configured origins; `no-store`, nosniff. | `next.config.ts`, `app.ts` | CORS yes |
 | Input | Every route input parsed with the shared zod schema; money is integer cents; sync push limited to 200 items. | everywhere | yes |
 | Secrets | Nothing secret in the repository; `.env` files are git-ignored; seed admin password ≥ 12 characters from the environment. | `.env.example` | — |
-| SMS stand-in | The log stub would expose sign-in codes in server logs. In production the API refuses to start with it unless `ALLOW_SMS_STUB=true` is set deliberately. | `src/server.ts` | manually |
+| Sign-in codes | Sent by WhatsApp through Fonnte (`SMS_PROVIDER=fonnte`). The log stub would expose codes in server logs, so production refuses it unless `ALLOW_SMS_STUB=true` is set deliberately. Send failures answer `SMS_FAILED`. | `src/sms.ts`, `src/server.ts` | yes |
 
 ## Dependency audit (`pnpm audit --prod`, 2026-10-15)
 
@@ -36,8 +36,6 @@ Re-run `pnpm audit --prod` before each release.
 
 ## Open items
 
-1. **SMS provider** (open decision). Until chosen, console sign-in codes are in the API log: anyone who can read the server logs can sign in with a known password. Choose a provider before the console is used outside the pilot team.
-2. **Backups contain everything.** Encrypt the backup volume or copy, and restrict who can read it (docs/DEPLOY.md).
-3. **Record retention** (open decision, NFR-10). Nothing is ever deleted today; the triggers make deletion impossible by design. Retention needs a decision and then an owner-run archive procedure.
+1. **Sign-in codes by WhatsApp (Fonnte).** The Fonnte token can send messages from the AMD WhatsApp number: keep it only in the server environment, rotate it if it leaks. Codes travel through Fonnte and WhatsApp, a third party; acceptable for a one-time 5-minute code.
 4. **Console password lockout.** Rate limiting slows guessing; there is no permanent lock after N wrong passwords (unlike agent PINs). Add if AMD wants it.
 5. **Tetum texts** are drafts; review so warnings and errors read correctly to agents.

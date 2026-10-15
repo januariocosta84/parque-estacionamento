@@ -11,6 +11,7 @@ Answers to open questions, so they are not asked or guessed again. Newest last.
 | 2026-10-14 | Blocked phone: wipe local data? | No. Lock the app and sign out, keep the encrypted data so unsynced tickets can be recovered. |
 | 2026-10-14 | Clock skew limit | Flag events from a phone whose clock is over 5 minutes off (`clockSkewWarnSeconds` = 300). |
 | 2026-10-14 | Offline capacity | Two serial blocks of 50 per phone (50–100 tickets without signal). |
+| 2026-10-15 | SMS provider for console sign-in codes (FR-04) | **Fonnte**, a WhatsApp gateway: codes arrive as WhatsApp messages, so console users need WhatsApp on their phone number. Token in the server environment only. |
 
 ## Defaults chosen in code, to confirm with AMD
 

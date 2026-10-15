@@ -47,6 +47,8 @@ services:
       CORS_ORIGINS: https://${CONSOLE_DOMAIN}
       TRUST_PROXY: 'true'
       SMS_PROVIDER: ${SMS_PROVIDER:-stub}
+      FONNTE_TOKEN: ${FONNTE_TOKEN:-}
+      FONNTE_COUNTRY_CODE: ${FONNTE_COUNTRY_CODE:-670}
       ALLOW_SMS_STUB: ${ALLOW_SMS_STUB:-false}
     depends_on:
       migrate: { condition: service_completed_successfully }
