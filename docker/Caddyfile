@@ -1,0 +1,14 @@
+# HTTPS in front of the API and the console. Caddy obtains and renews certificates itself;
+# both domain names must point at this server (docs/DEPLOY.md).
+
+{$API_DOMAIN} {
+	encode gzip
+	reverse_proxy api:3001
+	header Strict-Transport-Security "max-age=31536000"
+}
+
+{$CONSOLE_DOMAIN} {
+	encode gzip
+	reverse_proxy console:3000
+	header Strict-Transport-Security "max-age=31536000"
+}
