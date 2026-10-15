@@ -112,6 +112,7 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
                   <Td>
                     <p className="font-semibold">{u.name}</p>
                     <p className="font-mono text-sm text-muted">{u.agentNumber ?? u.username}</p>
+                    {u.phone ? <p className="text-sm text-muted">{u.phone}</p> : null}
                   </Td>
                   <Td>{t(`role.${u.role}` as MessageKey)}</Td>
                   <Td className="text-sm text-muted">
@@ -124,66 +125,92 @@ export default async function AdminPage({ searchParams }: PageProps<'/admin'>) {
                     />
                   </Td>
                   <Td>
-                    {u.id === me.id ? null : (
-                      <details>
-                        <summary className="cursor-pointer font-semibold text-red">
-                          {u.status === 'ACTIVE' ? t('admin.lock') : t('admin.unlock')} ·{' '}
-                          {t('admin.areas')}
-                        </summary>
-                        <div className="mt-3 grid min-w-72 gap-4">
-                          <ActionForm
-                            action={updateUserAction}
-                            submit={u.status === 'ACTIVE' ? t('admin.lock') : t('admin.unlock')}
-                            variant={u.status === 'ACTIVE' ? 'primary' : 'dark'}
-                            className="grid gap-2"
-                          >
-                            <input type="hidden" name="id" value={u.id} />
-                            <input
-                              type="hidden"
-                              name="status"
-                              value={u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE'}
-                            />
-                            <input
-                              name="reason"
-                              required
-                              placeholder={t('common.reason')}
-                              aria-label={t('common.reason')}
-                              className={small}
-                            />
-                          </ActionForm>
-                          <ActionForm
-                            action={updateUserAction}
-                            submit={t('common.save')}
-                            variant="outline"
-                            className="grid gap-2"
-                          >
-                            <input type="hidden" name="id" value={u.id} />
-                            <input type="hidden" name="areas" value="1" />
-                            <div className="flex flex-wrap gap-2">
-                              {activeAreas.map((a) => (
-                                <label key={a.id} className="flex items-center gap-2 text-sm">
-                                  <input
-                                    type="checkbox"
-                                    name="areaIds"
-                                    value={a.id}
-                                    defaultChecked={u.areaIds.includes(a.id)}
-                                    className="h-4 w-4 accent-red"
-                                  />
-                                  {a.name}
-                                </label>
-                              ))}
-                            </div>
-                            <input
-                              name="reason"
-                              required
-                              placeholder={t('common.reason')}
-                              aria-label={t('common.reason')}
-                              className={small}
-                            />
-                          </ActionForm>
-                        </div>
-                      </details>
-                    )}
+                    <details>
+                      <summary className="cursor-pointer font-semibold text-red">
+                        {u.id === me.id
+                          ? t('admin.phone')
+                          : `${u.status === 'ACTIVE' ? t('admin.lock') : t('admin.unlock')} · ${t('admin.areas')} · ${t('admin.phone')}`}
+                      </summary>
+                      <div className="mt-3 grid min-w-72 gap-4">
+                        <ActionForm
+                          action={updateUserAction}
+                          submit={t('common.save')}
+                          variant="outline"
+                          className="grid gap-2"
+                        >
+                          <input type="hidden" name="id" value={u.id} />
+                          <input
+                            name="phone"
+                            type="tel"
+                            defaultValue={u.phone ?? ''}
+                            placeholder={t('admin.phone')}
+                            aria-label={t('admin.phone')}
+                            className={small}
+                          />
+                          <input
+                            name="reason"
+                            required
+                            placeholder={t('common.reason')}
+                            aria-label={t('common.reason')}
+                            className={small}
+                          />
+                        </ActionForm>
+                        {u.id === me.id ? null : (
+                          <>
+                            <ActionForm
+                              action={updateUserAction}
+                              submit={u.status === 'ACTIVE' ? t('admin.lock') : t('admin.unlock')}
+                              variant={u.status === 'ACTIVE' ? 'primary' : 'dark'}
+                              className="grid gap-2"
+                            >
+                              <input type="hidden" name="id" value={u.id} />
+                              <input
+                                type="hidden"
+                                name="status"
+                                value={u.status === 'ACTIVE' ? 'LOCKED' : 'ACTIVE'}
+                              />
+                              <input
+                                name="reason"
+                                required
+                                placeholder={t('common.reason')}
+                                aria-label={t('common.reason')}
+                                className={small}
+                              />
+                            </ActionForm>
+                            <ActionForm
+                              action={updateUserAction}
+                              submit={t('common.save')}
+                              variant="outline"
+                              className="grid gap-2"
+                            >
+                              <input type="hidden" name="id" value={u.id} />
+                              <input type="hidden" name="areas" value="1" />
+                              <div className="flex flex-wrap gap-2">
+                                {activeAreas.map((a) => (
+                                  <label key={a.id} className="flex items-center gap-2 text-sm">
+                                    <input
+                                      type="checkbox"
+                                      name="areaIds"
+                                      value={a.id}
+                                      defaultChecked={u.areaIds.includes(a.id)}
+                                      className="h-4 w-4 accent-red"
+                                    />
+                                    {a.name}
+                                  </label>
+                                ))}
+                              </div>
+                              <input
+                                name="reason"
+                                required
+                                placeholder={t('common.reason')}
+                                aria-label={t('common.reason')}
+                                className={small}
+                              />
+                            </ActionForm>
+                          </>
+                        )}
+                      </div>
+                    </details>
                   </Td>
                 </tr>
               ))}

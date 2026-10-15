@@ -59,6 +59,7 @@ export async function updateUserAction(_prev: FormState, fd: FormData): Promise<
   const body: Record<string, unknown> = { reason: str(fd, 'reason') };
   if (status === 'ACTIVE' || status === 'LOCKED') body.status = status;
   if (fd.has('areas')) body.areaIds = fd.getAll('areaIds').map(String);
+  if (fd.has('phone')) body.phone = str(fd, 'phone') || null;
   return send(`/admin/users/${id}`, adminUserSchema, body);
 }
 

@@ -157,6 +157,19 @@ describe.skipIf(!hasTestDb)('admin (FR-28)', () => {
       );
     });
 
+    it('an admin can change their own sign-in code phone; logged', async () => {
+      const res = await post(`/admin/users/${admin.user.id}`, {
+        phone: '77000001',
+        reason: 'WhatsApp number',
+      });
+      expect(res.statusCode).toBe(200);
+      expect(res.json()).toMatchObject({ phone: '77000001' });
+      expect((await lastAdminEvent()).details).toMatchObject({
+        action: 'update_user',
+        changes: { phone: { to: '77000001' } },
+      });
+    });
+
     it('lists users without secrets', async () => {
       const res = await app.inject({ method: 'GET', url: '/admin/users', headers: admin.headers });
       const { users } = adminUsersResponseSchema.parse(res.json());
