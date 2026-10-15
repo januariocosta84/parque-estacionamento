@@ -16,8 +16,8 @@ One Linux server runs everything with Docker Compose (`docker-compose.prod.yml`)
 - A Linux server (2 CPU, 4 GB RAM, 40 GB disk is plenty for the pilot) with Docker Engine and the
   Compose plugin, ports 80 and 443 open to the internet.
 - Two DNS names pointing at the server, e.g. `api.<domain>` and `consola.<domain>`.
-- Decisions still open (CLAUDE.md): **SMS provider** (until then console codes go to the API log,
-  see docs/SECURITY.md) and **record retention**.
+- A Fonnte account with the AMD WhatsApp number connected (console sign-in codes, docs/DECISIONS.md).
+- Decision still open (CLAUDE.md): **record retention**.
 
 ## 2. First deploy
 
@@ -128,11 +128,19 @@ chown -R estacionamento:estacionamento apps/console/.next/standalone/apps/consol
 systemctl restart estacionamento-api estacionamento-console
 ```
 
-## Logs and console sign-in codes
+## Console sign-in codes (Fonnte)
+
+1. While the stub is still on, sign in as admin (code: `journalctl -u estacionamento-api | grep "SMS stub" | tail -1`)
+   and in **Administração** give every console user their WhatsApp number.
+2. Install the helper once: `install -m 700 deploy/vps/estacionamento-set-fonnte /usr/local/sbin/`
+3. Run it as root: `estacionamento-set-fonnte`. It asks for the Fonnte token without showing it,
+   writes it to `api.env`, turns the stub off and restarts the API (and puts the old settings back
+   if the API does not start). Run it again to rotate the token.
+
+## Logs
 
 ```sh
 journalctl -u estacionamento-api -f
-journalctl -u estacionamento-api | grep "SMS stub" | tail -1     # latest console sign-in code
 ```
 
 ## Restore

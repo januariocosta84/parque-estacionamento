@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Switch console sign-in codes to WhatsApp through Fonnte (docs/DECISIONS.md).
+# Run as root on the server:  estacionamento-set-fonnte
+# The token is typed here, never echoed, and written only to /etc/estacionamento/api.env.
+set -euo pipefail
+
+ENV_FILE=/etc/estacionamento/api.env
+[ "$(id -u)" -eq 0 ] || { echo "Run as root." >&2; exit 1; }
+[ -f "$ENV_FILE" ] || { echo "$ENV_FILE not found." >&2; exit 1; }
+
+read -rsp "Fonnte token (Fonnte dashboard → Device → Token): " token; echo
+[ -n "$token" ] || { echo "No token given; nothing changed." >&2; exit 1; }
+case "$token" in *[[:space:]]*) echo "Token contains spaces; nothing changed." >&2; exit 1;; esac
+
+set_var() { # name value — replace the line or append it
+  local tmp; tmp=$(mktemp)
+  grep -v "^$1=" "$ENV_FILE" > "$tmp" || true
+  printf '%s=%s\n' "$1" "$2" >> "$tmp"
+  install -m 600 -o root -g root "$tmp" "$ENV_FILE"; rm -f "$tmp"
+}
+
+cp -p "$ENV_FILE" "$ENV_FILE.bak"
+set_var SMS_PROVIDER fonnte
+set_var FONNTE_TOKEN "$token"
+grep -q '^FONNTE_COUNTRY_CODE=' "$ENV_FILE" || set_var FONNTE_COUNTRY_CODE 670
+set_var ALLOW_SMS_STUB false
+unset token
+
+systemctl restart estacionamento-api
+sleep 3
+if systemctl is-active --quiet estacionamento-api; then
+  rm -f "$ENV_FILE.bak"
+  echo "Done: sign-in codes now go by WhatsApp through Fonnte."
+  echo "Every console user needs a WhatsApp phone number (console → Administração)."
+else
+  echo "The API did not start; restoring the previous settings." >&2
+  mv "$ENV_FILE.bak" "$ENV_FILE"
+  systemctl restart estacionamento-api
+  journalctl -u estacionamento-api -n 15 --no-pager >&2
+  exit 1
+fi
