@@ -141,7 +141,9 @@ journalctl -u estacionamento-api | grep "SMS stub" | tail -1     # latest consol
 systemctl stop estacionamento-api estacionamento-console
 sudo -u postgres dropdb --force estacionamento
 sudo -u postgres createdb -O estacionamento_owner estacionamento
-sudo -u postgres pg_restore -d estacionamento --no-owner --role=estacionamento_owner /var/backups/estacionamento/estacionamento-<time>.dump
+# root reads the root-only backup file and pipes it to pg_restore
+sudo -u postgres pg_restore -d estacionamento --no-owner --role=estacionamento_owner \
+  < /var/backups/estacionamento/estacionamento-<time>.dump
 (cd /opt/estacionamento-dili/apps/api && set -a && . /etc/estacionamento/migrate.env && set +a && pnpm exec tsx scripts/apply-app-role.ts)
 systemctl start estacionamento-api estacionamento-console
 ```
