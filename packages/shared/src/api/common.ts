@@ -18,6 +18,7 @@ export const errorResponseSchema = z.object({
     'ALREADY_PAID',
     'CHARGE_CHANGED',
     'INSUFFICIENT_PAYMENT',
+    'RATE_LIMITED',
     'INTERNAL',
   ]),
   message: z.string(),

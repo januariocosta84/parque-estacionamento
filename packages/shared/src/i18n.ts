@@ -321,6 +321,7 @@ const pt = {
   'error.NETWORK': 'Sem ligação ao servidor. Tente de novo.',
   'error.SERIAL_NOT_ALLOCATED': 'Número de título fora do bloco deste telemóvel.',
   'error.DEVICE_BLOCKED': 'Este telemóvel foi bloqueado.',
+  'error.RATE_LIMITED': 'Demasiadas tentativas. Espere alguns minutos e tente de novo.',
 } as const;
 
 export type MessageKey = keyof typeof pt;
@@ -636,6 +637,7 @@ const tet: Record<MessageKey, string> = {
   'error.NETWORK': 'Laiha ligasaun ba servidór. Koko fali.',
   'error.SERIAL_NOT_ALLOCATED': "Númeru títulu la'ós husi blok telemovel ida-ne'e.",
   'error.DEVICE_BLOCKED': "Telemovel ida-ne'e blokeadu.",
+  'error.RATE_LIMITED': 'Tentativa barak liu. Hein minutu balun no koko fali.',
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { pt, tet };

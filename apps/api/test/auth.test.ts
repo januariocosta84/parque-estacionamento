@@ -240,6 +240,22 @@ describe.skipIf(!hasTestDb)('auth and role guard', () => {
       expect(late.json().error).toBe('CODE_EXPIRED');
     });
 
+    it('rate-limits password guessing per account, without blocking other accounts', async () => {
+      const target = await createConsoleUser(db, 'finance');
+      const other = await createConsoleUser(db, 'finance');
+      const guess = (username: string, password = 'wrong-guess') =>
+        app.inject({ method: 'POST', url: '/auth/console/login', payload: { username, password } });
+
+      for (let i = 0; i < 10; i++) expect((await guess(target.username!)).statusCode).toBe(401);
+      const blocked = await guess(target.username!);
+      expect(blocked.statusCode).toBe(429);
+      expect(blocked.json().error).toBe('RATE_LIMITED');
+      // Even the right password waits until the window passes.
+      expect((await guess(target.username!, 'console-password')).statusCode).toBe(429);
+      // Another account from the same IP is not affected.
+      expect((await guess(other.username!, 'console-password')).statusCode).toBe(200);
+    });
+
     it('agents cannot use the console sign-in', async () => {
       const res = await app.inject({
         method: 'POST',

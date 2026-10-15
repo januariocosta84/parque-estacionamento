@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest } from 'fastify';
 import {
   agentLoginRequestSchema,
   consoleLoginRequestSchema,
@@ -30,6 +30,32 @@ import {
 
 const HOUR_MS = 60 * 60_000;
 
+/**
+ * Sign-in rate limit, counted per client IP *and* account: many agents' phones can share one
+ * carrier IP (CGNAT), so an IP-only limit would lock out a whole shift.
+ */
+function signInLimit(
+  max: number,
+  minutes: number,
+  field: 'agentNumber' | 'username' | 'challengeId',
+) {
+  return {
+    config: {
+      rateLimit: {
+        max,
+        timeWindow: minutes * 60_000,
+        hook: 'preHandler' as const,
+        keyGenerator: (request: FastifyRequest) => {
+          const body = (request.body ?? {}) as Record<string, unknown>;
+          return `${request.ip}|${field}|${String(body[field] ?? '')
+            .trim()
+            .toUpperCase()}`;
+        },
+      },
+    },
+  };
+}
+
 function toSessionUser(user: {
   id: string;
   name: string;
@@ -52,172 +78,184 @@ function toSessionUser(user: {
 
 export function registerAuthRoutes(app: FastifyInstance, db: Db, sms: SmsSender) {
   // ── Agent: agent number + 6-digit PIN (FR-01, FR-03, FR-05) ──────────────
-  app.post('/auth/agent/login', async (request): Promise<SessionResponse> => {
-    const body = parse(agentLoginRequestSchema, request.body);
-    const user = await db.user.findUnique({
-      where: { agentNumber: body.agentNumber },
-      include: { areas: true },
-    });
-
-    if (!user || user.role !== 'agent' || !user.pinHash) {
-      await verifySecret(body.pin, DUMMY_HASH); // same timing as a real check
-      throw new ApiError('INVALID_CREDENTIALS', 'Wrong agent number or PIN');
-    }
-
-    const failed = (reason: string, extra: Record<string, number> = {}) =>
-      writeEvent(db, {
-        type: 'SIGN_IN',
-        userId: user.id,
-        details: { success: false, reason, deviceId: body.deviceId, ...extra },
+  app.post(
+    '/auth/agent/login',
+    signInLimit(10, 1, 'agentNumber'),
+    async (request): Promise<SessionResponse> => {
+      const body = parse(agentLoginRequestSchema, request.body);
+      const user = await db.user.findUnique({
+        where: { agentNumber: body.agentNumber },
+        include: { areas: true },
       });
 
-    if (user.status === 'LOCKED') {
-      await failed('account_locked');
-      throw new ApiError('ACCOUNT_LOCKED', 'Account locked; a supervisor must reset the PIN');
-    }
-
-    const device = await db.device.findUnique({ where: { id: body.deviceId } });
-    if (device?.status === 'BLOCKED') {
-      await failed('device_blocked');
-      throw new ApiError('DEVICE_BLOCKED', 'This device is blocked');
-    }
-
-    if (!(await verifySecret(body.pin, user.pinHash))) {
-      const maxAttempts = await getSetting(db, 'pinMaxAttempts');
-      const { failedPinAttempts } = await db.user.update({
-        where: { id: user.id },
-        data: { failedPinAttempts: { increment: 1 } },
-      });
-      const locked = failedPinAttempts >= maxAttempts;
-      if (locked) {
-        await db.user.update({ where: { id: user.id }, data: { status: 'LOCKED' } });
+      if (!user || user.role !== 'agent' || !user.pinHash) {
+        await verifySecret(body.pin, DUMMY_HASH); // same timing as a real check
+        throw new ApiError('INVALID_CREDENTIALS', 'Wrong agent number or PIN');
       }
-      await failed(locked ? 'wrong_pin_locked' : 'wrong_pin', { attempt: failedPinAttempts });
-      if (locked) {
-        throw new ApiError('ACCOUNT_LOCKED', 'Too many wrong PINs; a supervisor must reset it');
+
+      const failed = (reason: string, extra: Record<string, number> = {}) =>
+        writeEvent(db, {
+          type: 'SIGN_IN',
+          userId: user.id,
+          details: { success: false, reason, deviceId: body.deviceId, ...extra },
+        });
+
+      if (user.status === 'LOCKED') {
+        await failed('account_locked');
+        throw new ApiError('ACCOUNT_LOCKED', 'Account locked; a supervisor must reset the PIN');
       }
-      throw new ApiError('INVALID_CREDENTIALS', 'Wrong agent number or PIN', {
-        remainingAttempts: maxAttempts - failedPinAttempts,
-      });
-    }
 
-    const hours = await getSetting(db, 'agentSessionHours');
-    const token = newSessionToken();
-    const expiresAt = new Date(Date.now() + hours * HOUR_MS);
+      const device = await db.device.findUnique({ where: { id: body.deviceId } });
+      if (device?.status === 'BLOCKED') {
+        await failed('device_blocked');
+        throw new ApiError('DEVICE_BLOCKED', 'This device is blocked');
+      }
 
-    await db.$transaction(async (tx) => {
-      await tx.user.update({ where: { id: user.id }, data: { failedPinAttempts: 0 } });
-      await tx.device.upsert({
-        where: { id: body.deviceId },
-        create: { id: body.deviceId, userId: user.id },
-        update: { userId: user.id },
-      });
-      await tx.session.create({
-        data: { tokenHash: sha256(token), userId: user.id, deviceId: body.deviceId, expiresAt },
-      });
-      await writeEvent(tx, {
-        type: 'SIGN_IN',
-        userId: user.id,
-        deviceId: body.deviceId,
-        details: { success: true, method: 'pin' },
-      });
-    });
+      if (!(await verifySecret(body.pin, user.pinHash))) {
+        const maxAttempts = await getSetting(db, 'pinMaxAttempts');
+        const { failedPinAttempts } = await db.user.update({
+          where: { id: user.id },
+          data: { failedPinAttempts: { increment: 1 } },
+        });
+        const locked = failedPinAttempts >= maxAttempts;
+        if (locked) {
+          await db.user.update({ where: { id: user.id }, data: { status: 'LOCKED' } });
+        }
+        await failed(locked ? 'wrong_pin_locked' : 'wrong_pin', { attempt: failedPinAttempts });
+        if (locked) {
+          throw new ApiError('ACCOUNT_LOCKED', 'Too many wrong PINs; a supervisor must reset it');
+        }
+        throw new ApiError('INVALID_CREDENTIALS', 'Wrong agent number or PIN', {
+          remainingAttempts: maxAttempts - failedPinAttempts,
+        });
+      }
 
-    return { token, expiresAt: expiresAt.toISOString(), user: toSessionUser(user) };
-  });
+      const hours = await getSetting(db, 'agentSessionHours');
+      const token = newSessionToken();
+      const expiresAt = new Date(Date.now() + hours * HOUR_MS);
+
+      await db.$transaction(async (tx) => {
+        await tx.user.update({ where: { id: user.id }, data: { failedPinAttempts: 0 } });
+        await tx.device.upsert({
+          where: { id: body.deviceId },
+          create: { id: body.deviceId, userId: user.id },
+          update: { userId: user.id },
+        });
+        await tx.session.create({
+          data: { tokenHash: sha256(token), userId: user.id, deviceId: body.deviceId, expiresAt },
+        });
+        await writeEvent(tx, {
+          type: 'SIGN_IN',
+          userId: user.id,
+          deviceId: body.deviceId,
+          details: { success: true, method: 'pin' },
+        });
+      });
+
+      return { token, expiresAt: expiresAt.toISOString(), user: toSessionUser(user) };
+    },
+  );
 
   // ── Console step 1: username + password, then an SMS code is sent (FR-04) ─
-  app.post('/auth/console/login', async (request): Promise<ConsoleLoginResponse> => {
-    const body = parse(consoleLoginRequestSchema, request.body);
-    const user = await db.user.findUnique({ where: { username: body.username } });
+  app.post(
+    '/auth/console/login',
+    signInLimit(10, 15, 'username'),
+    async (request): Promise<ConsoleLoginResponse> => {
+      const body = parse(consoleLoginRequestSchema, request.body);
+      const user = await db.user.findUnique({ where: { username: body.username } });
 
-    if (!user || user.role === 'agent' || !user.passwordHash) {
-      await verifySecret(body.password, DUMMY_HASH);
-      throw new ApiError('INVALID_CREDENTIALS', 'Wrong username or password');
-    }
-    if (user.status === 'LOCKED') {
-      await writeEvent(db, {
-        type: 'SIGN_IN',
-        userId: user.id,
-        details: { success: false, reason: 'account_locked' },
+      if (!user || user.role === 'agent' || !user.passwordHash) {
+        await verifySecret(body.password, DUMMY_HASH);
+        throw new ApiError('INVALID_CREDENTIALS', 'Wrong username or password');
+      }
+      if (user.status === 'LOCKED') {
+        await writeEvent(db, {
+          type: 'SIGN_IN',
+          userId: user.id,
+          details: { success: false, reason: 'account_locked' },
+        });
+        throw new ApiError('ACCOUNT_LOCKED', 'Account is locked');
+      }
+      if (!(await verifySecret(body.password, user.passwordHash))) {
+        await writeEvent(db, {
+          type: 'SIGN_IN',
+          userId: user.id,
+          details: { success: false, reason: 'wrong_password' },
+        });
+        throw new ApiError('INVALID_CREDENTIALS', 'Wrong username or password');
+      }
+
+      const minutes = await getSetting(db, 'loginCodeTtlMinutes');
+      const code = newLoginCode();
+      const expiresAt = new Date(Date.now() + minutes * 60_000);
+      const challenge = await db.loginCode.create({
+        data: { userId: user.id, codeHash: await hashSecret(code), expiresAt },
       });
-      throw new ApiError('ACCOUNT_LOCKED', 'Account is locked');
-    }
-    if (!(await verifySecret(body.password, user.passwordHash))) {
-      await writeEvent(db, {
-        type: 'SIGN_IN',
-        userId: user.id,
-        details: { success: false, reason: 'wrong_password' },
-      });
-      throw new ApiError('INVALID_CREDENTIALS', 'Wrong username or password');
-    }
+      await sms.send(user.phone, translate('pt', 'sms.loginCode', { code, minutes }));
 
-    const minutes = await getSetting(db, 'loginCodeTtlMinutes');
-    const code = newLoginCode();
-    const expiresAt = new Date(Date.now() + minutes * 60_000);
-    const challenge = await db.loginCode.create({
-      data: { userId: user.id, codeHash: await hashSecret(code), expiresAt },
-    });
-    await sms.send(user.phone, translate('pt', 'sms.loginCode', { code, minutes }));
-
-    return { challengeId: challenge.id, expiresAt: expiresAt.toISOString() };
-  });
+      return { challengeId: challenge.id, expiresAt: expiresAt.toISOString() };
+    },
+  );
 
   // ── Console step 2: one-time code ────────────────────────────────────────
-  app.post('/auth/console/verify', async (request): Promise<SessionResponse> => {
-    const body = parse(consoleVerifyRequestSchema, request.body);
-    const challenge = await db.loginCode.findUnique({
-      where: { id: body.challengeId },
-      include: { user: { include: { areas: true } } },
-    });
-    const maxAttempts = await getSetting(db, 'loginCodeMaxAttempts');
-
-    if (
-      !challenge ||
-      challenge.usedAt ||
-      challenge.expiresAt <= new Date() ||
-      challenge.attempts >= maxAttempts ||
-      challenge.user.status === 'LOCKED'
-    ) {
-      throw new ApiError('CODE_EXPIRED', 'Code expired or already used; sign in again');
-    }
-
-    if (!(await verifySecret(body.code, challenge.codeHash))) {
-      await db.loginCode.update({
-        where: { id: challenge.id },
-        data: { attempts: { increment: 1 } },
+  app.post(
+    '/auth/console/verify',
+    signInLimit(10, 15, 'challengeId'),
+    async (request): Promise<SessionResponse> => {
+      const body = parse(consoleVerifyRequestSchema, request.body);
+      const challenge = await db.loginCode.findUnique({
+        where: { id: body.challengeId },
+        include: { user: { include: { areas: true } } },
       });
-      await writeEvent(db, {
-        type: 'SIGN_IN',
-        userId: challenge.userId,
-        details: { success: false, reason: 'wrong_code' },
-      });
-      throw new ApiError('INVALID_CREDENTIALS', 'Wrong code');
-    }
+      const maxAttempts = await getSetting(db, 'loginCodeMaxAttempts');
 
-    const hours = await getSetting(db, 'consoleSessionHours');
-    const token = newSessionToken();
-    const expiresAt = new Date(Date.now() + hours * HOUR_MS);
+      if (
+        !challenge ||
+        challenge.usedAt ||
+        challenge.expiresAt <= new Date() ||
+        challenge.attempts >= maxAttempts ||
+        challenge.user.status === 'LOCKED'
+      ) {
+        throw new ApiError('CODE_EXPIRED', 'Code expired or already used; sign in again');
+      }
 
-    await db.$transaction(async (tx) => {
-      // usedAt: null in the filter makes the code single-use even under concurrent requests
-      const { count } = await tx.loginCode.updateMany({
-        where: { id: challenge.id, usedAt: null },
-        data: { usedAt: new Date() },
-      });
-      if (count !== 1) throw new ApiError('CODE_EXPIRED', 'Code already used; sign in again');
-      await tx.session.create({
-        data: { tokenHash: sha256(token), userId: challenge.userId, expiresAt },
-      });
-      await writeEvent(tx, {
-        type: 'SIGN_IN',
-        userId: challenge.userId,
-        details: { success: true, method: 'password+sms' },
-      });
-    });
+      if (!(await verifySecret(body.code, challenge.codeHash))) {
+        await db.loginCode.update({
+          where: { id: challenge.id },
+          data: { attempts: { increment: 1 } },
+        });
+        await writeEvent(db, {
+          type: 'SIGN_IN',
+          userId: challenge.userId,
+          details: { success: false, reason: 'wrong_code' },
+        });
+        throw new ApiError('INVALID_CREDENTIALS', 'Wrong code');
+      }
 
-    return { token, expiresAt: expiresAt.toISOString(), user: toSessionUser(challenge.user) };
-  });
+      const hours = await getSetting(db, 'consoleSessionHours');
+      const token = newSessionToken();
+      const expiresAt = new Date(Date.now() + hours * HOUR_MS);
+
+      await db.$transaction(async (tx) => {
+        // usedAt: null in the filter makes the code single-use even under concurrent requests
+        const { count } = await tx.loginCode.updateMany({
+          where: { id: challenge.id, usedAt: null },
+          data: { usedAt: new Date() },
+        });
+        if (count !== 1) throw new ApiError('CODE_EXPIRED', 'Code already used; sign in again');
+        await tx.session.create({
+          data: { tokenHash: sha256(token), userId: challenge.userId, expiresAt },
+        });
+        await writeEvent(tx, {
+          type: 'SIGN_IN',
+          userId: challenge.userId,
+          details: { success: true, method: 'password+sms' },
+        });
+      });
+
+      return { token, expiresAt: expiresAt.toISOString(), user: toSessionUser(challenge.user) };
+    },
+  );
 
   // ── Session ──────────────────────────────────────────────────────────────
   app.get(
