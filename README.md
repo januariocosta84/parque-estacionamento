@@ -55,13 +55,9 @@ pnpm build:ios     # iOS build for registered test iPhones (internal distributio
 pnpm build:store   # Play Store (.aab) and App Store builds
 ```
 
-Before the first build, tell EAS where the API is (once per profile; a release build without it
-refuses to start):
-
-```sh
-npx eas-cli env:create --environment preview    --name EXPO_PUBLIC_API_URL --value https://<API_DOMAIN> --visibility plaintext
-npx eas-cli env:create --environment production --name EXPO_PUBLIC_API_URL --value https://<API_DOMAIN> --visibility plaintext
-```
+The API address is set in `apps/agent/eas.json` (`EXPO_PUBLIC_API_URL`, currently the pilot
+server `https://estacionamento-api.timorstore.com`). Change it there if the server moves; a release
+build without it refuses to start.
 
 You need a free Expo account (`npx eas-cli login`). iOS also needs a paid Apple Developer Program
 account, and each test iPhone must be registered (`npx eas-cli device:create`) or the build sent
@@ -76,8 +72,8 @@ through TestFlight.
   ([migration](apps/api/prisma/migrations/20261014020300_immutability/migration.sql)).
 - Values AMD has not decided yet (part-hour rule, PIN lockout count, session lengths, serial block
   size) are in the `settings` table, seeded with defaults.
-- Console sign-in sends a one-time code by SMS. Until an SMS provider is chosen, the code is
-  written to the API log instead.
+- Console sign-in sends a one-time code by WhatsApp through Fonnte (`SMS_PROVIDER=fonnte`). In
+  development (`SMS_PROVIDER=stub`) the code is written to the API log instead.
 - API tests that need the database run only when `DATABASE_URL_TEST` is set. Its name must end in
   `_test`, because the test setup wipes it.
 
