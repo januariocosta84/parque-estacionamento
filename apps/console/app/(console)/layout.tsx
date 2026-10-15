@@ -8,6 +8,7 @@ import {
   LogOut,
   Settings,
   Ticket,
+  UserCog,
   Wallet,
 } from 'lucide-react';
 import type { MessageKey, Role } from '@estacionamento/shared';
@@ -32,6 +33,12 @@ const MENU: { href: string; key: MessageKey; roles: Role[]; icon: ReactNode }[] 
     key: 'nav.activeTickets',
     roles: ['supervisor'],
     icon: <Ticket className={icon} />,
+  },
+  {
+    href: '/agents',
+    key: 'nav.agents',
+    roles: ['supervisor', 'admin'],
+    icon: <UserCog className={icon} />,
   },
   {
     href: '/history',
