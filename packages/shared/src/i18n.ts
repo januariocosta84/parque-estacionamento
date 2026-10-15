@@ -322,6 +322,7 @@ const pt = {
   'error.SERIAL_NOT_ALLOCATED': 'Número de título fora do bloco deste telemóvel.',
   'error.DEVICE_BLOCKED': 'Este telemóvel foi bloqueado.',
   'error.RATE_LIMITED': 'Demasiadas tentativas. Espere alguns minutos e tente de novo.',
+  'error.SMS_FAILED': 'Não foi possível enviar o código por WhatsApp. Contacte o administrador.',
 } as const;
 
 export type MessageKey = keyof typeof pt;
@@ -638,6 +639,7 @@ const tet: Record<MessageKey, string> = {
   'error.SERIAL_NOT_ALLOCATED': "Númeru títulu la'ós husi blok telemovel ida-ne'e.",
   'error.DEVICE_BLOCKED': "Telemovel ida-ne'e blokeadu.",
   'error.RATE_LIMITED': 'Tentativa barak liu. Hein minutu balun no koko fali.',
+  'error.SMS_FAILED': 'La konsege haruka kódigu liuhusi WhatsApp. Kontaktu administradór.',
 };
 
 export const messages: Record<Locale, Record<MessageKey, string>> = { pt, tet };

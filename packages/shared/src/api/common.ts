@@ -19,6 +19,7 @@ export const errorResponseSchema = z.object({
     'CHARGE_CHANGED',
     'INSUFFICIENT_PAYMENT',
     'RATE_LIMITED',
+    'SMS_FAILED',
     'INTERNAL',
   ]),
   message: z.string(),

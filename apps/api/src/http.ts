@@ -19,6 +19,7 @@ const STATUS: Record<ErrorCode, number> = {
   NO_TARIFF: 422,
   INSUFFICIENT_PAYMENT: 422,
   RATE_LIMITED: 429,
+  SMS_FAILED: 502,
   INTERNAL: 500,
 };
 

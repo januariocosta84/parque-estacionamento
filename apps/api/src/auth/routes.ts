@@ -191,7 +191,13 @@ export function registerAuthRoutes(app: FastifyInstance, db: Db, sms: SmsSender)
       const challenge = await db.loginCode.create({
         data: { userId: user.id, codeHash: await hashSecret(code), expiresAt },
       });
-      await sms.send(user.phone, translate('pt', 'sms.loginCode', { code, minutes }));
+      try {
+        await sms.send(user.phone, translate('pt', 'sms.loginCode', { code, minutes }));
+      } catch (err) {
+        // Provider down, quota used up, or no phone on the account: say so, log the cause.
+        request.log.error({ err, userId: user.id }, 'sign-in code could not be sent');
+        throw new ApiError('SMS_FAILED', 'The sign-in code could not be sent');
+      }
 
       return { challengeId: challenge.id, expiresAt: expiresAt.toISOString() };
     },

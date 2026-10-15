@@ -256,6 +256,26 @@ describe.skipIf(!hasTestDb)('auth and role guard', () => {
       expect((await guess(other.username!, 'console-password')).statusCode).toBe(200);
     });
 
+    it('SMS_FAILED when the code cannot be sent (provider down, no phone)', async () => {
+      const failing = buildApp({
+        db,
+        sms: {
+          send: async () => {
+            throw new Error('Fonnte refused the message: insufficient quota');
+          },
+        },
+      });
+      const user = await createConsoleUser(db, 'auditor');
+      const res = await failing.inject({
+        method: 'POST',
+        url: '/auth/console/login',
+        payload: { username: user.username, password: 'console-password' },
+      });
+      expect(res.statusCode).toBe(502);
+      expect(res.json().error).toBe('SMS_FAILED');
+      await failing.close();
+    });
+
     it('agents cannot use the console sign-in', async () => {
       const res = await app.inject({
         method: 'POST',
