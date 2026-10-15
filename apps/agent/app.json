@@ -3,12 +3,23 @@
     "name": "Estacionamento Dili",
     "slug": "estacionamento-dili",
     "scheme": "estacionamento",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "icon": "./assets/icon.png",
     "platforms": ["android", "ios", "web"],
     "android": {
-      "package": "tl.gov.amd.estacionamento"
+      "package": "tl.gov.amd.estacionamento",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#17181C"
+      },
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "ios": {
       "bundleIdentifier": "tl.gov.amd.estacionamento",
@@ -19,14 +30,18 @@
     },
     "plugins": [
       "expo-router",
-      [
-        "expo-sqlite",
-        {
-          "useSQLCipher": true
-        }
-      ],
+      ["expo-sqlite", { "useSQLCipher": true }],
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 160,
+          "resizeMode": "contain",
+          "backgroundColor": "#17181C"
+        }
+      ]
     ],
     "web": {
       "bundler": "metro",
