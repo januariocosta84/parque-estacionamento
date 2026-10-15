@@ -9,8 +9,13 @@ ENV_FILE=/etc/estacionamento/api.env
 [ -f "$ENV_FILE" ] || { echo "$ENV_FILE not found." >&2; exit 1; }
 
 read -rsp "Fonnte token (Fonnte dashboard → Device → Token): " token; echo
+# Terminals wrap pasted text in bracketed-paste markers (ESC[200~ … ESC[201~); drop them.
+token=${token//$'\e[200~'/}; token=${token//$'\e[201~'/}
 [ -n "$token" ] || { echo "No token given; nothing changed." >&2; exit 1; }
-case "$token" in *[[:space:]]*) echo "Token contains spaces; nothing changed." >&2; exit 1;; esac
+LC_ALL=C
+if [[ ! "$token" =~ ^[[:graph:]]+$ ]]; then
+  echo "Token contains spaces or hidden characters; nothing changed." >&2; exit 1
+fi
 
 set_var() { # name value — replace the line or append it
   local tmp; tmp=$(mktemp)
