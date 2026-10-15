@@ -111,7 +111,10 @@ export default async function AgentsPage() {
                           className={`${small} min-w-48 flex-1`}
                         />
                       </ActionForm>
-                    ) : null}
+                    ) : (
+                      // After blocking, the form goes away with the re-render; say so here.
+                      <p className="mt-2 text-sm font-semibold text-red">{t('agents.blockDone')}</p>
+                    )}
                   </li>
                 ))}
               </ul>
