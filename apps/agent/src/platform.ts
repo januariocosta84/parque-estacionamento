@@ -9,6 +9,17 @@ import type { Env, SecureStore as Store } from './env';
 const toHex = (bytes: Uint8Array) =>
   Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
 
+/**
+ * API address, fixed at build time (README "Phone builds"). A release build without it would
+ * quietly try the phone itself, so it fails at start-up instead.
+ */
+function apiUrl(): string {
+  const url = process.env.EXPO_PUBLIC_API_URL;
+  if (url) return url;
+  if (__DEV__) return 'http://localhost:3001';
+  throw new Error('EXPO_PUBLIC_API_URL was not set when this app was built');
+}
+
 export async function createPhoneEnv(): Promise<Env> {
   const store: Store = {
     get: (key) => SecureStore.getItemAsync(key),
@@ -28,7 +39,7 @@ export async function createPhoneEnv(): Promise<Env> {
   return {
     db,
     store,
-    api: new ApiClient(process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3001'),
+    api: new ApiClient(apiUrl()),
     now: () => new Date(),
     newId: () => Crypto.randomUUID(),
     randomBytes: (n) => Crypto.getRandomBytes(n),
