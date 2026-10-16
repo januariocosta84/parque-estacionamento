@@ -3,6 +3,7 @@ export * from './serial';
 export * from './refs';
 export * from './money';
 export * from './time';
+export * from './plate';
 export * from './i18n';
 export * from './schemas/records';
 export * from './api/common';
