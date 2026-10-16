@@ -30,7 +30,12 @@
     },
     "plugins": [
       "expo-router",
-      ["expo-sqlite", { "useSQLCipher": true }],
+      [
+        "expo-sqlite",
+        {
+          "useSQLCipher": true
+        }
+      ],
       "expo-secure-store",
       "expo-font",
       [
@@ -46,6 +51,13 @@
     "web": {
       "bundler": "metro",
       "output": "single"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7577ff50-6f16-4ba5-b5cb-a237dfd19f77"
+      }
+    },
+    "owner": "admin_janu"
   }
 }
