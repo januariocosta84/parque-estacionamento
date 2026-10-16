@@ -38,7 +38,10 @@ export interface SyncStatus {
 }
 
 interface AppContextValue {
-  status: 'loading' | 'signed-out' | 'signed-in' | 'blocked';
+  status: 'loading' | 'signed-out' | 'signed-in' | 'blocked' | 'error';
+  /** Why start-up failed (status 'error'), shown so it can be reported. */
+  startError: string | null;
+  retryStart(): void;
   env: Env | null;
   session: Session | null;
   locale: Locale;
@@ -62,6 +65,19 @@ export function useApp(): AppContextValue {
   return value;
 }
 
+async function openApp(): Promise<{
+  env: Env;
+  locale: Locale | null;
+  blocked: boolean;
+  session: Session | null;
+}> {
+  const env = await createPhoneEnv();
+  const saved = await env.store.get('locale');
+  const locale = saved && (locales as readonly string[]).includes(saved) ? (saved as Locale) : null;
+  if (await isDeviceBlocked(env)) return { env, locale, blocked: true, session: null };
+  return { env, locale, blocked: false, session: await restoreSession(env) };
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
   const [env, setEnv] = useState<Env | null>(null);
   const [status, setStatus] = useState<AppContextValue['status']>('loading');
@@ -76,19 +92,27 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const runner = useRef<SyncRunner | null>(null);
   const [dataVersion, setDataVersion] = useState(0);
 
-  useEffect(() => {
-    void (async () => {
-      const e = await createPhoneEnv();
-      runner.current = new SyncRunner(e);
-      const saved = await e.store.get('locale');
-      if (saved && (locales as readonly string[]).includes(saved)) setLocaleState(saved as Locale);
-      setEnv(e);
-      if (await isDeviceBlocked(e)) return setStatus('blocked');
-      const s = await restoreSession(e);
-      setSession(s);
-      setStatus(s ? 'signed-in' : 'signed-out');
-    })();
+  const [startError, setStartError] = useState<string | null>(null);
+
+  // Open the encrypted database and restore the session. A failure shows an error screen with a
+  // retry instead of an endless spinner. State changes only once opening has finished.
+  const start = useCallback(() => {
+    void openApp().then(
+      (o) => {
+        runner.current = new SyncRunner(o.env);
+        if (o.locale) setLocaleState(o.locale);
+        setEnv(o.env);
+        setSession(o.session);
+        setStatus(o.blocked ? 'blocked' : o.session ? 'signed-in' : 'signed-out');
+      },
+      (err: unknown) => {
+        setStartError(err instanceof Error ? err.message : String(err));
+        setStatus('error');
+      },
+    );
   }, []);
+
+  useEffect(() => start(), [start]);
 
   const refreshCounts = useCallback(
     async (state?: SyncStatus['state']) => {
@@ -144,6 +168,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const value = useMemo<AppContextValue>(
     () => ({
       status,
+      startError,
+      retryStart: () => {
+        setStatus('loading');
+        setStartError(null);
+        start();
+      },
       env,
       session,
       locale,
@@ -178,7 +208,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         void syncNow(); // docs/SYNC.md §6: sync after each issue or exit
       },
     }),
-    [status, env, session, locale, sync, syncNow, dataVersion, refreshCounts],
+    [status, startError, start, env, session, locale, sync, syncNow, dataVersion, refreshCounts],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

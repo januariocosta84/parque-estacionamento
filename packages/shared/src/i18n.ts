@@ -64,6 +64,10 @@ const pt = {
   'blocked.title': 'Telemóvel bloqueado',
   'blocked.text':
     'O supervisor bloqueou este telemóvel. Os registos ficam guardados. Contacte o supervisor.',
+  'startup.title': 'A aplicação não abriu',
+  'startup.text':
+    'Não foi possível abrir os dados guardados neste telemóvel. Tente de novo; se continuar, mostre esta mensagem ao supervisor.',
+  'startup.retry': 'Tentar de novo',
   'home.signOut': 'Sair',
   /** Comma-separated, January first. */
   'months.short': 'jan,fev,mar,abr,mai,jun,jul,ago,set,out,nov,dez',
@@ -381,6 +385,10 @@ const tet: Record<MessageKey, string> = {
   'blocked.title': 'Telemovel blokeadu',
   'blocked.text':
     "Supervizór blokeia telemovel ida-ne'e. Rejistu sira rai nafatin. Kontaktu supervizór.",
+  'startup.title': 'Aplikasaun la loke',
+  'startup.text':
+    "La konsege loke dadus ne'ebé rai iha telemovel ida-ne'e. Koko fali; se nafatin, hatudu mensajen ida-ne'e ba supervizór.",
+  'startup.retry': 'Koko fali',
   'home.signOut': 'Sai',
   'months.short': 'jan,fev,mar,abr,mai,jun,jul,ago,set,out,nov,dez',
 
