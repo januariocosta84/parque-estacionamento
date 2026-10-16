@@ -19,6 +19,7 @@ NFR-07 (every sign-in and change logged) and CLAUDE.md rules 5 and 8. Date: 2026
 | Browser | Console: `frame-ancestors 'none'`, nosniff, referrer policy; server actions check the origin. API: CORS only for configured origins; `no-store`, nosniff. | `next.config.ts`, `app.ts` | CORS yes |
 | Input | Every route input parsed with the shared zod schema; money is integer cents; sync push limited to 200 items. | everywhere | yes |
 | Secrets | Nothing secret in the repository; `.env` files are git-ignored; seed admin password ≥ 12 characters from the environment. | `.env.example` | — |
+| Camera (plate reading, FR-29) | Only the camera permission (no microphone). The photo is read on the phone and deleted straight away; nothing is uploaded. | `apps/agent/src/components/plate-scanner.tsx` | plate parsing yes |
 | Sign-in codes | Sent by WhatsApp through Fonnte (`SMS_PROVIDER=fonnte`). The log stub would expose codes in server logs, so production refuses it unless `ALLOW_SMS_STUB=true` is set deliberately. Send failures answer `SMS_FAILED`. | `src/sms.ts`, `src/server.ts` | yes |
 
 ## Dependency audit (`pnpm audit --prod`, 2026-10-15)

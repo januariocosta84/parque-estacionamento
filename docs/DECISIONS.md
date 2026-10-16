@@ -12,6 +12,7 @@ Answers to open questions, so they are not asked or guessed again. Newest last.
 | 2026-10-14 | Clock skew limit | Flag events from a phone whose clock is over 5 minutes off (`clockSkewWarnSeconds` = 300). |
 | 2026-10-14 | Offline capacity | Two serial blocks of 50 per phone (50–100 tickets without signal). |
 | 2026-10-15 | SMS provider for console sign-in codes (FR-04) | **Fonnte**, a WhatsApp gateway: codes arrive as WhatsApp messages, so console users need WhatsApp on their phone number. Token in the server environment only. |
+| 2026-10-16 | Read plates with the camera? | Yes, as FR-29. Recognition runs on the phone (Google ML Kit on Android, Apple Vision on iOS), so it works offline and no picture leaves the phone; the photo is deleted once read. It only fills in the plate field: the agent checks it and can pick another reading or type it. No cloud plate-recognition service (needs signal, costs per photo, sends pictures of vehicles to a third party). No plate format is assumed. To confirm with AMD and tune with photos of real Dili plates. |
 
 ## Defaults chosen in code, to confirm with AMD
 

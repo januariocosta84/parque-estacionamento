@@ -45,6 +45,7 @@ Source: System Requirements Specification (draft, October 2026). Priority: **M**
 | FR-26 | Event log that no user can edit or delete                                                                                     | M   | R1                                                                |
 | FR-27 | Export reports and event log to .xlsx/.csv and PDF                                                                            | S   | R2                                                                |
 | FR-28 | Admin manages accounts, roles, areas, vehicle classes, tariffs; every change logged; tariff changes apply only to new tickets | M   | R1                                                                |
+| FR-29 | Read the plate with the phone camera, on the phone and offline; the agent confirms it; the photo is not kept                  | S   | R2 (added 2026-10-16, see DECISIONS.md)                           |
 
 ## Business rules
 
