@@ -4,6 +4,9 @@ import base from '../../eslint.config.base.mjs';
 export default [
   ...base,
   ...expoConfig,
-  // Metro loads its config with require(), so it stays CommonJS.
-  { files: ['metro.config.js'], rules: { '@typescript-eslint/no-require-imports': 'off' } },
+  // Metro and Expo config plugins are loaded with require(), so they stay CommonJS.
+  {
+    files: ['metro.config.js', 'plugins/*.js'],
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
 ];

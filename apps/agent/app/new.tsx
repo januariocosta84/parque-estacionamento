@@ -1,5 +1,6 @@
 // Novo título — issue a ticket (FR-06, FR-07). Design: docs/screens/02-novo-titulo.png
-// Date, entry time and agent are shown, never typed (BR-09, FR-07).
+// Date, entry time and agent are shown, never typed (BR-09, FR-07). The plate can be read with
+// the camera (FR-29); the agent checks it before issuing.
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useState } from 'react';
@@ -7,6 +8,7 @@ import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { formatDiliDate, formatDiliTime, formatUsd, tariffInForce } from '@estacionamento/shared';
 import { useApp } from '../src/app-state';
 import { Card, ErrorText, Row, Screen, SyncNote, vehicleIconName } from '../src/components/kit';
+import { PlateScanner, plateScanSupported } from '../src/components/plate-scanner';
 import { Button, InfoNote, Label } from '../src/components/ui';
 import { useErrorText, useLocalData, useNow, useVehicleClasses } from '../src/hooks';
 import { getMyAreas, getTariffs } from '../src/local/reference';
@@ -19,6 +21,9 @@ export default function NewTicket() {
   const now = useNow();
   const classes = useVehicleClasses().filter((c) => c.active);
   const [plate, setPlate] = useState('');
+  const [scanOpen, setScanOpen] = useState(false);
+  /** Set after a camera reading: the other readings, offered as alternatives. */
+  const [otherReadings, setOtherReadings] = useState<string[] | null>(null);
   const [chosenClassId, setClassId] = useState<string | null>(null);
   const [chosenAreaId, setAreaId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -47,6 +52,7 @@ export default function NewTicket() {
       });
       afterWrite();
       setPlate('');
+      setOtherReadings(null);
       router.push(`/ticket/${ticket.id}`);
     } catch (err) {
       setError(errorText(err));
@@ -90,9 +96,52 @@ export default function NewTicket() {
             onSubmitEditing={submit}
             returnKeyType="done"
           />
-          <MaterialCommunityIcons name="form-textbox" size={24} color={colors.muted} />
+          {plateScanSupported ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t('scan.open')}
+              onPress={() => setScanOpen(true)}
+              style={styles.scanButton}
+            >
+              <MaterialCommunityIcons name="camera" size={28} color={colors.surface} />
+            </Pressable>
+          ) : (
+            <MaterialCommunityIcons name="form-textbox" size={24} color={colors.muted} />
+          )}
         </View>
+        {otherReadings ? (
+          <View style={styles.readings}>
+            <Text style={styles.checkText}>{t('scan.check')}</Text>
+            {otherReadings.length > 0 ? (
+              <View style={styles.chips}>
+                <Text style={styles.othersLabel}>{t('scan.others')}</Text>
+                {otherReadings.map((r) => (
+                  <Pressable
+                    key={r}
+                    accessibilityRole="button"
+                    onPress={() => setPlate(r)}
+                    style={styles.chip}
+                  >
+                    <Text style={styles.chipText}>{r}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            ) : null}
+          </View>
+        ) : null}
       </View>
+
+      {plateScanSupported ? (
+        <PlateScanner
+          visible={scanOpen}
+          onClose={() => setScanOpen(false)}
+          onResult={(candidates) => {
+            setPlate(candidates[0]!);
+            setOtherReadings(candidates.slice(1));
+            setScanOpen(false);
+          }}
+        />
+      ) : null}
 
       <View>
         <Label>{t('newTicket.vehicleType')}</Label>
@@ -181,6 +230,29 @@ const styles = StyleSheet.create({
     color: colors.ink,
     paddingVertical: 12,
   },
+  scanButton: {
+    width: sizes.touch + 8,
+    height: sizes.touch + 8,
+    marginRight: -8,
+    borderRadius: sizes.radius,
+    backgroundColor: colors.ink,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  readings: { marginTop: 10, gap: 8 },
+  checkText: { fontFamily: fonts.semibold, fontSize: 15, color: colors.red },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  othersLabel: { fontFamily: fonts.regular, fontSize: 15, color: colors.muted },
+  chip: {
+    minHeight: sizes.touch,
+    justifyContent: 'center',
+    paddingHorizontal: 14,
+    borderRadius: sizes.radius,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    backgroundColor: colors.surface,
+  },
+  chipText: { fontFamily: fonts.mono, fontSize: 18, color: colors.ink },
   types: { flexDirection: 'row', flexWrap: 'wrap', gap: 12 },
   type: {
     flexGrow: 1,

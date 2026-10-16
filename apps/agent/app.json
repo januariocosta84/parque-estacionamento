@@ -39,6 +39,16 @@
       "expo-secure-store",
       "expo-font",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "A câmara é usada para ler a matrícula do veículo. A fotografia não é guardada.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      "./plugins/with-mlkit-ocr-model",
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
