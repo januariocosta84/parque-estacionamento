@@ -4,38 +4,22 @@ import { DatabaseSync } from 'node:sqlite';
 import type { SessionUser } from '@estacionamento/shared';
 import { ApiClient } from '../src/api';
 import { migrate } from '../src/db/schema';
+import { serialDb } from '../src/db/serial';
 import type { SqlDb, SqlValue } from '../src/db/types';
 import type { Env, SecureStore } from '../src/env';
 import type { Session } from '../src/session';
 
+/** node:sqlite behind the same queue the phone uses (src/db/serial.ts). */
 export function nodeDb(): SqlDb {
   const raw = new DatabaseSync(':memory:');
-  let depth = 0;
-  const db: SqlDb = {
-    exec: async (sql) => void raw.exec(sql),
-    run: async (sql, ...params: SqlValue[]) => ({
-      changes: Number(raw.prepare(sql).run(...params).changes),
-    }),
-    all: async <T>(sql: string, ...params: SqlValue[]) => raw.prepare(sql).all(...params) as T[],
-    first: async <T>(sql: string, ...params: SqlValue[]) =>
+  return serialDb({
+    execAsync: async (sql) => void raw.exec(sql),
+    runAsync: async (sql, params) => ({ changes: Number(raw.prepare(sql).run(...params).changes) }),
+    getAllAsync: async <T>(sql: string, params: SqlValue[]) =>
+      raw.prepare(sql).all(...params) as T[],
+    getFirstAsync: async <T>(sql: string, params: SqlValue[]) =>
       (raw.prepare(sql).get(...params) as T | undefined) ?? null,
-    transaction: async <T>(fn: (tx: SqlDb) => Promise<T>) => {
-      if (depth > 0) return fn(db);
-      depth++;
-      raw.exec('BEGIN IMMEDIATE');
-      try {
-        const result = await fn(db);
-        raw.exec('COMMIT');
-        return result;
-      } catch (err) {
-        raw.exec('ROLLBACK');
-        throw err;
-      } finally {
-        depth--;
-      }
-    },
-  };
-  return db;
+  });
 }
 
 export function memoryStore(): SecureStore & { data: Map<string, string> } {
