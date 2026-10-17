@@ -161,6 +161,11 @@ const pt = {
   'receipt.registeredAt': 'Pagamento registado às {time}',
   'receipt.backHome': 'Voltar ao início',
   'receipt.change': 'Troco',
+  'receipt.share': 'Partilhar recibo',
+  'receipt.serial': 'Título',
+  'receipt.plate': 'Matrícula',
+  'receipt.totalPaid': 'Total pago',
+  'receipt.ref': 'Referência',
   'newTicket.area': 'Área',
 
   // ── Agent: history (06) ──
@@ -492,6 +497,11 @@ const tet: Record<MessageKey, string> = {
   'receipt.registeredAt': 'Pagamentu rejista iha oras {time}',
   'receipt.backHome': 'Fila ba iníciu',
   'receipt.change': 'Troku',
+  'receipt.share': 'Fahe resibu',
+  'receipt.serial': 'Títulu',
+  'receipt.plate': 'Matríkula',
+  'receipt.totalPaid': 'Total selu',
+  'receipt.ref': 'Referénsia',
   'newTicket.area': 'Área',
 
   // ── Agent: history (06) ──

@@ -2,13 +2,14 @@
 // Design: docs/screens/05-pagamento-recebido.png
 import { Feather } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { Share, StyleSheet, Text, View } from 'react-native';
 import { formatDiliDate, formatDiliTime, formatUsd } from '@estacionamento/shared';
 import { useApp } from '../../src/app-state';
 import { Card, Divider, ErrorText, Row, Screen, StatusPill } from '../../src/components/kit';
 import { Button } from '../../src/components/ui';
 import { useLocalData, useVehicleClasses } from '../../src/hooks';
 import { getReceipt } from '../../src/local/tickets';
+import { receiptShareText } from '../../src/receipt-share';
 import { colors, fonts } from '../../src/theme';
 
 export default function ReceiptScreen() {
@@ -17,13 +18,25 @@ export default function ReceiptScreen() {
   const receipt = useLocalData((env, s) => getReceipt(env.db, s, id), [id]);
   const classes = useVehicleClasses();
 
+  const vehicle = receipt ? classes.find((c) => c.id === receipt.vehicleClassId)?.name : undefined;
+
+  // The driver may want a copy: the share sheet offers WhatsApp, SMS, … (works offline).
+  const share = () => {
+    if (!receipt) return;
+    const message = receiptShareText(receipt, vehicle, t);
+    Share.share({ message, title: t('receipt.heading') }).catch(() => undefined);
+  };
+
   const footer = (
-    <Button
-      label={t('receipt.backHome')}
-      icon="home"
-      variant="dark"
-      onPress={() => router.navigate('/home')}
-    />
+    <View style={{ gap: 10 }}>
+      {receipt ? <Button label={t('receipt.share')} icon="share-2" onPress={share} /> : null}
+      <Button
+        label={t('receipt.backHome')}
+        icon="home"
+        variant="dark"
+        onPress={() => router.navigate('/home')}
+      />
+    </View>
   );
 
   if (receipt === undefined)
@@ -42,7 +55,6 @@ export default function ReceiptScreen() {
 
   const entry = new Date(receipt.entryAt);
   const exit = new Date(receipt.exitAt);
-  const vehicle = classes.find((c) => c.id === receipt.vehicleClassId)?.name;
 
   return (
     <Screen tab="new" eyebrow={t('receipt.eyebrow')} title={t('receipt.title')} footer={footer}>
