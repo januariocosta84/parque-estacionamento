@@ -11,5 +11,12 @@ Release 1 in use by week 10. Work one milestone at a time; each ends with passin
 - [x] **M6 — Agent app screens**: Início, Novo título, Título emitido, Registar saída, Pagamento recebido, Histórico — matching `docs/screens`.
 - [x] **M7 — Console**: sign-in, Monitorização (live totals, filters, active tickets, recent activity), daily revenue report, audit log view, admin (users, areas, classes, tariffs).
 - [ ] **M8 — Hardening for pilot**: end-to-end test of the full ticket flow offline → online, security review, Android build (APK) and iOS build (EAS, internal distribution / TestFlight) for pilot phones, tested on a real device of each, deployment of API + console, backups.
+  - [x] End-to-end test offline → online (`apps/agent/test/e2e.test.ts`, runs in CI)
+  - [x] Security review (docs/SECURITY.md; dependency audit re-run 2026-10-17, unchanged)
+  - [x] API + console deployed to the pilot VPS (docs/DEPLOY.md), daily backups
+  - [x] Android APK built on EAS from the current code (preview profile, 2026-10-16)
+  - [ ] APK tested on a real Android phone: sign in with signal, issue / exit / pay offline, sync when signal returns, plate camera (FR-29)
+  - [ ] iOS build (needs Apple Developer account; register test iPhones or use TestFlight) and tested on a real iPhone
+  - [ ] Backups copied off the server daily; restore drill done and timed (docs/DEPLOY.md §6)
 
 Release 2 (after pilot): FR-09 duplicate-plate warning, FR-11 SMS, FR-12 Bluetooth printer, FR-22 hourly chart, FR-24 alerts, FR-27 exports.
