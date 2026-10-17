@@ -3,7 +3,7 @@
 // the camera (FR-29); the agent checks it before issuing.
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { formatDiliDate, formatDiliTime, formatUsd, tariffInForce } from '@estacionamento/shared';
 import { useApp } from '../src/app-state';
@@ -39,9 +39,14 @@ export default function NewTicket() {
     [];
   const tariff = classId ? tariffInForce(tariffs, classId, now) : undefined;
 
+  // `busy` only disables the button after a re-render, so a quick double tap could issue two
+  // tickets (two serials) for one car. The ref blocks the second call at once.
+  const issuing = useRef(false);
+
   const submit = async () => {
-    if (!env || !session || !classId) return;
+    if (!env || !session || !classId || issuing.current) return;
     if (plate.trim() === '') return setError(t('error.PLATE_REQUIRED'));
+    issuing.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -57,6 +62,7 @@ export default function NewTicket() {
     } catch (err) {
       setError(errorText(err));
     } finally {
+      issuing.current = false;
       setBusy(false);
     }
   };
@@ -93,7 +99,8 @@ export default function NewTicket() {
             placeholderTextColor={colors.line}
             style={styles.plateInput}
             accessibilityLabel={t('newTicket.plate')}
-            onSubmitEditing={submit}
+            // "Done" only closes the keyboard: issuing is the button alone, so the keyboard and
+            // the button cannot both issue a ticket for the same car.
             returnKeyType="done"
           />
           {plateScanSupported ? (
